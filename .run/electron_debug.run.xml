@@ -1,0 +1,6 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="electron:debug" type="ChromiumRemoteDebugType" factoryName="Chromium Remote"
+                   port="9527" restartOnDisconnect="true">
+        <method v="2"/>
+    </configuration>
+</component>
