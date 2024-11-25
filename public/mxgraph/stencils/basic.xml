@@ -1,0 +1,287 @@
+<shapes name="mxgraph.basic">
+    <!--三角形（上）-->
+    <shape aspect="variable" h="100" name="APPEND-BASIC-Triangle" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="100"/>
+                <line x="50" y="0"/>
+                <line x="100" y="100"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--三角形（下）-->
+    <shape aspect="variable" h="100" name="Triangle2" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="0"/>
+                <line x="100" y="0"/>
+                <line x="50" y="100"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--三角形（左）-->
+    <shape aspect="variable" h="100" name="Triangle3" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="100" y="0"/>
+                <line x="0" y="50"/>
+                <line x="100" y="100"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--三角形（右）-->
+    <shape aspect="variable" h="100" name="Triangle4" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="0"/>
+                <line x="100" y="50"/>
+                <line x="0" y="100"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--    平行四边形-->
+    <shape aspect="variable" h="20" name="APPEND-BASIC-Parallelepiped" strokewidth="inherit" w="40">
+        <connections>
+
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="20"/>
+                <line x="5" y="0"/>
+                <line x="40" y="0"/>
+                <line x="35" y="20"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--梯形-->
+    <shape aspect="variable" h="20" name="Trapezoid" strokewidth="inherit" w="20">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="20"/>
+                <line x="4" y="0"/>
+                <line x="16" y="0"/>
+                <line x="20" y="20"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+<!--    梯形（上）-->
+    <shape aspect="variable" h="100" name="APPEND-BASIC-Trapezoid" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="20" y="0"/>
+                <line x="80" y="0"/>
+                <line x="100" y="100"/>
+                <line x="0" y="100"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--    梯形（下）-->
+    <shape aspect="variable" h="100" name="Trapezoid2" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="20" y="100"/>
+                <line x="80" y="100"/>
+                <line x="100" y="0"/>
+                <line x="0" y="0"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--    梯形（左）-->
+    <shape aspect="variable" h="100" name="Trapezoid3" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="20"/>
+                <line x="0" y="80"/>
+                <line x="100" y="100"/>
+                <line x="100" y="0"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--    梯形（右）-->
+    <shape aspect="variable" h="100" name="Trapezoid4" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="100" y="20"/>
+                <line x="100" y="80"/>
+                <line x="0" y="100"/>
+                <line x="0" y="0"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--菱形-->
+    <shape aspect="variable" h="100" name="APPEND-BASIC-Rhombus" strokewidth="inherit" w="100">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="50" y="0"/>
+                <line x="100" y="50"/>
+                <line x="50" y="100"/>
+                <line x="0" y="50"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--半圆（上）-->
+    <shape aspect="variable" h="49" name="APPEND-BASIC-HalfCircle" strokewidth="inherit" w="98">
+        <connections>
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="49"/>
+                <arc large-arc-flag="1" rx="44.5" ry="44.5" sweep-flag="1" x="98" x-axis-rotation="0" y="49"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+
+    <!--半圆（下）-->
+    <shape aspect="variable" h="49" name="Half Circle2" strokewidth="inherit" w="98">
+        <connections>
+
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="0"/>
+                <arc large-arc-flag="1" rx="44.5" ry="44.5" sweep-flag="0" x="98" x-axis-rotation="0" y="0"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--半圆（左）-->
+    <shape aspect="variable" h="49" name="Half Circle3" strokewidth="inherit" w="98">
+        <connections>
+
+        </connections>
+        <background>
+            <path>
+                <move x="98" y="0"/>
+                <arc large-arc-flag="1" rx="98" ry="24.5" sweep-flag="0" x="98" x-axis-rotation="0" y="49"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+    <!--半圆（右）-->
+    <shape aspect="variable" h="49" name="Half Circle4" strokewidth="inherit" w="98">
+        <connections>
+
+        </connections>
+        <background>
+            <path>
+                <move x="0" y="0"/>
+                <arc large-arc-flag="1" rx="98" ry="24.5" sweep-flag="1" x="0" x-axis-rotation="0" y="49"/>
+                <close/>
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+        </foreground>
+    </shape>
+
+
+
+
+<!--    直角三角形-->
+<shape aspect="variable" h="30" name="APPEND-BASIC-OrthogonalTriangle" strokewidth="inherit" w="30">
+    <connections>
+    </connections>
+    <background>
+        <path>
+            <move x="0" y="30"/>
+            <line x="0" y="0"/>
+            <line x="30" y="30"/>
+            <close/>
+        </path>
+    </background>
+    <foreground>
+        <fillstroke/>
+    </foreground>
+</shape>
+    <shape name="APPEND-BASIC-Or" aspect="variable" strokewidth="inherit"  w="100" h="100">
+        <background>
+            <path>
+                <move x="0" y="0"/>
+                <quad x1="100" y1="0" x2="100" y2="50"/>
+                <quad x1="100" y1="100" x2="0" y2="100"/>
+                <quad x1="50" y1="50" x2="0" y2="0"/>
+                <close/>
+
+            </path>
+        </background>
+        <foreground>
+            <fillstroke/>
+
+        </foreground>
+    </shape>
+
+</shapes>
