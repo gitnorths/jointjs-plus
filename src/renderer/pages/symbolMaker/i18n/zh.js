@@ -1,0 +1,40 @@
+export default {
+  contextmenu: {
+    file: '文件',
+    new: '新建',
+    open: '打开',
+    save: '保存',
+    saveAs: '另存为',
+    recentFiles: '最近打开',
+    closeAll: '全部关闭',
+    clearRecent: '清除最近打开的记录',
+    close: '关闭',
+    exit: '退出',
+    view: '视图',
+    windowCatalogView: '资源管理器窗口',
+    windowOutputView: '输出变量窗口',
+    lastTab: '上一标签页',
+    nextTab: '下一标签页',
+    closeTab: '关闭当前标签页',
+    about: '关于',
+    help: '帮助文档',
+    versionInfo: '版本信息',
+
+    export: '导出',
+    openNextStudio: '打开一体化工具',
+    exportPkg: '导出离线测试包',
+    rename: '重命名',
+    copy: '复制',
+    paste: '粘贴',
+    delete: '删除',
+    deleteChecked: '删除选中项',
+    editProperty: '修改描述',
+    newSymbolLib: '新建符号库',
+    newSymbolBlock: '新建功能块',
+
+    closeOtherTabs: '关闭其他',
+    closeAllTabs: '关闭所有',
+    closeLeftTabs: '关闭左侧',
+    closeRightTabs: '关闭右侧'
+  }
+}

@@ -1,0 +1,40 @@
+export default {
+  contextmenu: {
+    file: 'file',
+    new: 'new',
+    open: 'open',
+    save: 'save',
+    saveAs: 'saveAs',
+    recentFiles: 'recentFiles',
+    closeAll: 'closeAll',
+    clearRecent: 'clearRecent',
+    close: 'close',
+    exit: 'exit',
+    view: 'view',
+    windowCatalogView: 'windowCatalogView',
+    windowOutputView: 'windowOutputView',
+    lastTab: 'lastTab',
+    nextTab: 'nextTab',
+    closeTab: 'closeTab',
+    about: 'about',
+    help: 'help',
+    versionInfo: 'versionInfo',
+
+    export: 'export',
+    openNextStudio: 'openNextStudio',
+    exportPkg: 'exportPkg',
+    rename: 'rename',
+    copy: 'copy',
+    paste: 'paste',
+    delete: 'delete',
+    deleteChecked: 'deleteChecked',
+    editProperty: 'editProperty',
+    newSymbolLib: 'newSymbolLib',
+    newSymbolBlock: 'newSymbolBlock',
+
+    closeOtherTabs: 'closeOtherTabs',
+    closeAllTabs: 'closeAllTabs',
+    closeLeftTabs: 'closeLeftTabs',
+    closeRightTabs: 'closeRightTabs'
+  }
+}
