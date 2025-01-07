@@ -14,15 +14,9 @@ import { ElementCompact, xml2js } from 'xml-js'
 import { getSymbolTypeEnum, getVariableTypeEnum, SymbolTypeEnum, TaskLevelEnum } from '@/model/enum'
 import path from 'path'
 import * as R from 'ramda'
-import {
-  genConnectNode,
-  genConnectNodeText,
-  genLineNode,
-  genRectNode,
-  genShapeNode,
-  genTextNode
-} from './mxStencilConvertor'
 import _ from 'lodash'
+import { loadSymbolGraphJoint } from './jointjsConvertor'
+import { formatVersion } from '@/util'
 
 export class SymbolLibLoader {
   public loadSymbolArchive (request: { name: string, organization: string, llsymPath: string }) {
@@ -102,7 +96,7 @@ export class SymbolLibLoader {
 
       const symbolVersion = new SymbolBlockVersion()
       symbolVersion.name = sb.name
-      symbolVersion.version = verDir
+      symbolVersion.version = formatVersion(verDir) // 将1.0改为 VmPnRk的格式
       symbolVersion.pathId = `${sb.pathId}/${symbolVersion.version}`.toLowerCase()
       symbolVersion.index = index
 
@@ -314,74 +308,11 @@ export class SymbolLibLoader {
               version.help = ele.cdata
             }
           } else if (ele.name === 'GRAPH') {
-            this.loadSymbolGraphStencil(ele, version)
+            // loadSymbolGraphStencil(ele, version) // mxgraph format loader
+            loadSymbolGraphJoint(ele, version) // jointjs format loader
           }
         }
       }
     }
-  }
-
-  private loadSymbolGraphStencil (ele: ElementCompact, version: SymbolBlockVersion) {
-    const { shapeSize, shape } = genShapeNode(ele, version)
-
-    const connections = shape.ele('connections') // 航点
-
-    // background and foreground
-    // Any stroke, fill or fillstroke of a background must be the first element of the foreground element, they must not be used within background.
-    // If the background is empty, this is not required.
-    // Because the background cannot have any fill or stroke, it can contain only one path, rect, roundrect or ellipse element (or none).
-    // It can also not include image, text or include-shape.
-
-    const background = shape.ele('background') // 背景
-    const foreground = shape.ele('foreground') // 前景
-
-    if (R.isNotEmpty(ele.elements)) {
-      const bgElements = []
-      const fgElements = []
-      for (const symbolEle of ele.elements) {
-        const { z_value } = symbolEle.attributes
-        if (/0\.00/.test(z_value)) {
-          bgElements.push(symbolEle)
-        } else {
-          fgElements.push(symbolEle)
-        }
-      }
-
-      // 1 根据z_value确定是否有background元素，目前的符号都是z_value为0.00的CGRectangleObject
-      if (R.isNotEmpty(bgElements)) {
-        if (bgElements.length > 1) {
-          throw new Error(`图形导入失败，${version.pathId} 的背景元素数量大于1`)
-        }
-        const symbolEle = bgElements[0]
-        const { class_name } = symbolEle.attributes
-        if (class_name === 'CGRectangleObject') {
-          genRectNode(symbolEle, foreground, background)
-        }
-      }
-      // 2 处理前景元素
-      if (R.isNotEmpty(fgElements)) {
-        for (const symbolEle of fgElements) {
-          const { class_name } = symbolEle.attributes
-
-          if (class_name === 'CGExpandTextObject') {
-            genTextNode(symbolEle, foreground)
-          } else if (class_name === 'CGLineObject') {
-            genLineNode(symbolEle, foreground)
-          } else if (class_name === 'CGRectangleObject') {
-            genRectNode(symbolEle, foreground)
-          } else if (class_name === 'CGCircleObject') {
-            // genCircleNode(trueSize.offset, background, coverArray(graphObj.CIRCLE))
-          } else if (class_name === 'CInputConnectNode') {
-            genConnectNode(symbolEle, shapeSize, connections, foreground, true)
-          } else if (class_name === 'COutputConnectNode') {
-            genConnectNode(symbolEle, shapeSize, connections, foreground, false)
-          } else if (class_name === 'CParameterText') {
-            genConnectNodeText(symbolEle, foreground)
-          }
-        }
-      }
-    }
-
-    version.graphicFile = shape.end()
   }
 }

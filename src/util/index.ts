@@ -25,6 +25,16 @@ export function getExponents (num: number) {
   return exponents
 }
 
+export function formatVersion (ver: string) {
+  // 形如 1.0 或者 1.0.0的格式 转换为 V1R0P0格式
+  if (/(\d+)\.(\d+)\.?(\d?)$/.test(ver)) {
+    const result = /(\d+)\.(\d+)\.?(\d?)$/.exec(ver)
+    return result ? `V${result[1]}R${result[2]}P${result[3] || 0}` : ver
+  } else {
+    return ver
+  }
+}
+
 // FIXME
 export function isReservedGroupName (name: string) {
   return /^(STATE|YX|YC|MEA)$/.test(name) ||

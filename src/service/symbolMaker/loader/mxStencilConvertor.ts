@@ -3,28 +3,6 @@ import * as R from 'ramda'
 import { ElementCompact } from 'xml-js'
 import { create, XMLElement } from 'xmlbuilder'
 
-export function genShapeNode (ele: ElementCompact, symbolBlock: SymbolBlockVersion) {
-  // "name", string, required.  The stencil name that uniquely identifies the shape.
-  // "w" and "h" are optional decimal view bounds.  This defines your co-ordinate system for the graphics operations in the shape.  The default is 100,100.
-  // "aspect", optional string.  Either "variable", the default, or "fixed".
-  //   Fixed means always render the shape with the aspect ratio defined by the ratio w/h.
-  //   Variable causes the ratio to match that of the geometry of the current vertex.
-  // "strokewidth", optional string.  Either an integer or the string "inherit".
-  //   "inherit" indicates that the strokeWidth of the cell is only changed on scaling, not on resizing.  Default is "1".
-  //   If numeric values are used, the strokeWidth of the cell is changed on both scaling and resizing and the value defines the multiple that is applied to the width.
-  // const [repoName, libName, symbolName, version] = symbolBlock.pathId.split('/')
-  const shapeSize = getShapeSize(ele)
-
-  const shape = create('shape', { headless: true, keepNullAttributes: false })
-    .att('name', symbolBlock.pathId)
-    .att('w', shapeSize.w)
-    .att('h', shapeSize.h)
-    .att('aspect', 'variable')
-    .att('strokewidth', 'inherit')
-
-  return { shapeSize, shape }
-}
-
 export function getShapeSize (ele: ElementCompact) {
   const xArr = []
   const yArr = []
@@ -67,6 +45,92 @@ export function getShapeSize (ele: ElementCompact) {
   }
 }
 
+export function loadSymbolGraphStencil (ele: ElementCompact, version: SymbolBlockVersion) {
+  const { shapeSize, shape } = genShapeNode(ele, version)
+
+  const connections = shape.ele('connections') // 航点
+
+  // background and foreground
+  // Any stroke, fill or fillstroke of a background must be the first element of the foreground element, they must not be used within background.
+  // If the background is empty, this is not required.
+  // Because the background cannot have any fill or stroke, it can contain only one path, rect, roundrect or ellipse element (or none).
+  // It can also not include image, text or include-shape.
+
+  const background = shape.ele('background') // 背景
+  const foreground = shape.ele('foreground') // 前景
+
+  if (R.isNotEmpty(ele.elements)) {
+    const bgElements = []
+    const fgElements = []
+    for (const symbolEle of ele.elements) {
+      const { z_value } = symbolEle.attributes
+      if (/0\.00/.test(z_value)) {
+        bgElements.push(symbolEle)
+      } else {
+        fgElements.push(symbolEle)
+      }
+    }
+
+    // 1 根据z_value确定是否有background元素，目前的符号都是z_value为0.00的CGRectangleObject
+    if (R.isNotEmpty(bgElements)) {
+      if (bgElements.length > 1) {
+        throw new Error(`图形导入失败，${version.pathId} 的背景元素数量大于1`)
+      }
+      const symbolEle = bgElements[0]
+      const { class_name } = symbolEle.attributes
+      if (class_name === 'CGRectangleObject') {
+        genRectNode(symbolEle, foreground, background)
+      }
+    }
+    // 2 处理前景元素
+    if (R.isNotEmpty(fgElements)) {
+      for (const symbolEle of fgElements) {
+        const { class_name } = symbolEle.attributes
+
+        if (class_name === 'CGExpandTextObject') {
+          genTextNode(symbolEle, foreground)
+        } else if (class_name === 'CGLineObject') {
+          genLineNode(symbolEle, foreground)
+        } else if (class_name === 'CGRectangleObject') {
+          genRectNode(symbolEle, foreground)
+        } else if (class_name === 'CGCircleObject') {
+          // genCircleNode(trueSize.offset, background, coverArray(graphObj.CIRCLE))
+        } else if (class_name === 'CInputConnectNode') {
+          genConnectNode(symbolEle, shapeSize, connections, foreground, true)
+        } else if (class_name === 'COutputConnectNode') {
+          genConnectNode(symbolEle, shapeSize, connections, foreground, false)
+        } else if (class_name === 'CParameterText') {
+          genConnectNodeText(symbolEle, foreground)
+        }
+      }
+    }
+  }
+
+  version.graphicFile = shape.end()
+}
+
+function genShapeNode (ele: ElementCompact, symbolBlock: SymbolBlockVersion) {
+  // "name", string, required.  The stencil name that uniquely identifies the shape.
+  // "w" and "h" are optional decimal view bounds.  This defines your co-ordinate system for the graphics operations in the shape.  The default is 100,100.
+  // "aspect", optional string.  Either "variable", the default, or "fixed".
+  //   Fixed means always render the shape with the aspect ratio defined by the ratio w/h.
+  //   Variable causes the ratio to match that of the geometry of the current vertex.
+  // "strokewidth", optional string.  Either an integer or the string "inherit".
+  //   "inherit" indicates that the strokeWidth of the cell is only changed on scaling, not on resizing.  Default is "1".
+  //   If numeric values are used, the strokeWidth of the cell is changed on both scaling and resizing and the value defines the multiple that is applied to the width.
+  // const [repoName, libName, symbolName, version] = symbolBlock.pathId.split('/')
+  const shapeSize = getShapeSize(ele)
+
+  const shape = create('shape', { headless: true, keepNullAttributes: false })
+    .att('name', symbolBlock.pathId)
+    .att('w', shapeSize.w)
+    .att('h', shapeSize.h)
+    .att('aspect', 'variable')
+    .att('strokewidth', 'inherit')
+
+  return { shapeSize, shape }
+}
+
 /**
  * <SYMBOL class_name="CGExpandTextObject" z_value="1.00">
  *  <DATA/>
@@ -78,7 +142,7 @@ export function getShapeSize (ele: ElementCompact) {
  *  </GRAPH>
  *</SYMBOL>
  */
-export function genTextNode (symbolEle: ElementCompact, foreground: XMLElement) {
+function genTextNode (symbolEle: ElementCompact, foreground: XMLElement) {
   // For font styling there are.
   // fontstyle, an ORed bit pattern of bold (1), italic (2) and underline (4), i.e. bold underline is "5".
   // fontfamily, is a string defining the typeface to be used.
@@ -152,7 +216,7 @@ export function genTextNode (symbolEle: ElementCompact, foreground: XMLElement) 
  *    </GRAPH>
  *  </SYMBOL>
  */
-export function genRectNode (symbolEle: ElementCompact, foreground: XMLElement, background?: XMLElement) {
+function genRectNode (symbolEle: ElementCompact, foreground: XMLElement, background?: XMLElement) {
   // rect, attributes “x”, “y”, “w”, “h”, all required decimals
   let x = 0
   let y = 0
@@ -209,7 +273,7 @@ export function genRectNode (symbolEle: ElementCompact, foreground: XMLElement, 
  *      </GRAPH>
  *    </SYMBOL>
  */
-export function genLineNode (symbolEle: ElementCompact, foreground: XMLElement) {
+function genLineNode (symbolEle: ElementCompact, foreground: XMLElement) {
   // Most drawing is contained within a path element.  Again, the graphic primitives are very similar to that of HTML 5 canvas.
   // move to attributes required decimals (x,y).
   // line to attributes required decimals (x,y).
@@ -267,8 +331,11 @@ export function genLineNode (symbolEle: ElementCompact, foreground: XMLElement) 
  *      </GRAPH>
  *    </SYMBOL>
  */
-export function genConnectNode (symbolEle: ElementCompact,
-  shapeSize: { w: number, h: number }, connections: XMLElement, foreground: XMLElement, isInput: boolean) {
+function genConnectNode (symbolEle: ElementCompact,
+                         shapeSize: {
+                           w: number,
+                           h: number
+                         }, connections: XMLElement, foreground: XMLElement, isInput: boolean) {
   // 生成连接点
   let x = 0
   let y = 0
@@ -336,7 +403,7 @@ export function genConnectNode (symbolEle: ElementCompact,
   foreground.ele('fillstroke')
 }
 
-export function genConnectNodeText (symbolEle: ElementCompact, foreground: XMLElement) {
+function genConnectNodeText (symbolEle: ElementCompact, foreground: XMLElement) {
   let fontstyle = 0
   let fontfamily = '宋体'
   let fontcolor = '#000000'
