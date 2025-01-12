@@ -79,7 +79,7 @@ import {
   YesNoEnum
 } from '@/model/enum'
 import { SymbolLibLoader } from '@/service/symbolMaker/loader/SymbolLibLoader'
-import { format10, formatSaddrPrefix, getExponents } from '@/util'
+import { format10, formatSaddrPrefix, formatVersion, getExponents } from '@/util'
 import { CUSTOM_PARAM_INST_NAME } from '@/util/consts'
 
 export class DeviceLoader {
@@ -394,9 +394,9 @@ export class DeviceLoader {
         const symbolType = getSymbolTypeEnum(type)
         const symbolBlockProto = new ProtoSymbolBlock({
           name,
-          version,
+          version: formatVersion(version),
           type: symbolType,
-          pathId: `${lib.pathId}/${name}/${version}`.toLowerCase()
+          pathId: `${lib.pathId}/${name}/${formatVersion(version)}`.toLowerCase()
         })
         const symbolBlockVersion = new SymbolBlockVersion(symbolBlockProto)
         this.symbolLibLoader.loadSymbolModel(dataPath, symbolBlockVersion)
@@ -408,7 +408,7 @@ export class DeviceLoader {
 
         // 用map记录
         // Ref_symbol_path="/mathop/Add2/1.0
-        this.symbolBlockVersionMap.set(`/${lib.name}/${symbolBlockProto.name}/${symbolBlockProto.version}`, symbolBlockVersion)
+        this.symbolBlockVersionMap.set(`/${lib.name}/${symbolBlockProto.name}/${version}`, symbolBlockVersion)
       }
       lib.children.forEach((symbol, index) => (symbol.index = index))
     }
@@ -434,7 +434,7 @@ export class DeviceLoader {
           searchPath: `/${libEle.name}/${name}/${version}`,
           name,
           status: EnableStatusEnum.ON,
-          pageSymbolPathId: `${libPathId}/${name}/${version}`.toLowerCase() // 组合符号pathId
+          pageSymbolPathId: `${libPathId}/${name}/${formatVersion(version)}`.toLowerCase() // 组合符号pathId
         }, snippet)
         snippet.pages.push(page)
 
@@ -542,7 +542,7 @@ export class DeviceLoader {
             instName: name,
             status: EnableStatusEnum.ON,
             type: SymbolTypeEnum.SYM_EXTEND,
-            pathId: 'base/extend/CConstBlock/1.0'.toLowerCase(), // FIXME
+            pathId: 'base/extend/CConstBlock/V1R0P0'.toLowerCase(), // FIXME
             searchPath: `${page.searchPath}/${name}`
           })
           const childVarListEle = symbolEle.elements[0]
@@ -587,7 +587,7 @@ export class DeviceLoader {
             instName: name,
             status: EnableStatusEnum.ON,
             type: SymbolTypeEnum.SYM_EXTEND,
-            pathId: `base${symbol_version}`.toLowerCase(), // FIXME
+            pathId: `base${formatVersion(symbol_version)}`.toLowerCase(), // FIXME
             searchPath: `${page.searchPath}/${name}`
           })
           const childVarListEle = symbolEle.elements[0]
@@ -625,7 +625,7 @@ export class DeviceLoader {
             instName: name,
             status: EnableStatusEnum.ON,
             type: SymbolTypeEnum.SYM_EXTEND, // FIXME
-            pathId: `base${symbol_version}`.toLowerCase(),
+            pathId: `base${formatVersion(symbol_version)}`.toLowerCase(),
             searchPath: `${page.searchPath}/${name}`
           })
           if (R.isNotEmpty(symbolEle.elements)) {
@@ -1308,7 +1308,7 @@ export class DeviceLoader {
           instName: name,
           status: EnableStatusEnum.ON,
           type: SymbolTypeEnum.SYM_EXTEND,
-          pathId: `base${Ref_symbol_path}`.toLowerCase(), // FIXME
+          pathId: `base${formatVersion(Ref_symbol_path)}`.toLowerCase(), // FIXME
           searchPath: `${page.searchPath}/${name}`,
           abbr,
           x: Number(x),
@@ -1369,7 +1369,7 @@ export class DeviceLoader {
           name: /CBrokenCircleBlock/.test(Ref_symbol_path) ? 'CBrokenCircleBlock' : 'Cast',
           instName: name,
           status: EnableStatusEnum.ON,
-          pathId: `base${Ref_symbol_path}`.toLowerCase(),
+          pathId: `base${formatVersion(Ref_symbol_path)}`.toLowerCase(),
           type: SymbolTypeEnum.SYM_EXTEND,
           abbr,
           searchPath: `${page.searchPath}/${name}`,
