@@ -3,6 +3,7 @@ import { ElementCompact } from 'xml-js'
 import { SymbolBlockVersion } from '@/model/dto'
 import { getShapeSize } from './mxStencilConvertor'
 import { dia } from '@joint/plus'
+import { formatPathIdType } from '@/util'
 
 export function loadSymbolGraphJoint (ele: ElementCompact, version: SymbolBlockVersion) {
   const shapeSize = getShapeSize(ele)
@@ -10,31 +11,31 @@ export function loadSymbolGraphJoint (ele: ElementCompact, version: SymbolBlockV
   const markupJson: dia.MarkupNodeJSON[] = []
 
   const inputGroup: dia.Element.PortGroup = {
-    position: { name: 'left' },
+    position: { name: 'absolute' },
     markup: [{ tagName: 'circle', selector: 'portBody' }],
     attrs: {
       portBody: { magnet: true }
     },
     label: {
       markup: [{ tagName: 'text', selector: 'label' }],
-      position: { name: 'right', args: { y: 6 } }
+      position: { name: 'right', args: { x: 6 } }
     }
   }
 
   const outputGroup: dia.Element.PortGroup = {
-    position: { name: 'right' },
+    position: { name: 'absolute' },
     markup: [{ tagName: 'circle', selector: 'portBody' }],
     attrs: {
       portBody: { magnet: true }
     },
     label: {
       markup: [{ tagName: 'text', selector: 'label' }],
-      position: { name: 'left', args: { y: 6 } }
+      position: { name: 'left', args: { x: -6 } }
     }
   }
 
   const jointGraphJson: dia.Element.GenericAttributes<dia.Cell.Selectors> = {
-    type: formatPathId2Type(version.pathId),
+    type: formatPathIdType(version.pathId),
     markup: '',
     size: { width: shapeSize.w, height: shapeSize.h },
     attr: {},
@@ -114,13 +115,6 @@ export function loadSymbolGraphJoint (ele: ElementCompact, version: SymbolBlockV
   const element = new dia.Element(jointGraphJson)
   element.set('id', version.pathId)
   version.graphicFile = JSON.stringify(element.toJSON())
-}
-
-function formatPathId2Type (pathId: string) {
-  return pathId
-  // 将pathId的/ 替换为. 用于namespace嵌套
-  // const pathArray = pathId.split('/')
-  // return pathArray.join('.')
 }
 
 function qtAlignmentToTextAttr (alignment: number | string, isRtl?: boolean) {
@@ -242,7 +236,6 @@ function genTextSvgNode (symbolEle: ElementCompact, selector?: string) {
     fontStyle,
     fontWeight,
     textDecorationLine,
-    textAnchor,
     dominantBaseline,
     textContent,
     x,
@@ -254,14 +247,13 @@ function genTextSvgNode (symbolEle: ElementCompact, selector?: string) {
     selector,
     attributes: {
       x,
-      y,
+      y: y + Number(fontSize),
       fill: fontColor,
       fontFamily,
       fontSize: `${fontSize}px`,
       fontStyle,
       fontWeight,
       textDecorationLine,
-      textAnchor,
       dominantBaseline
     },
     textContent
@@ -433,8 +425,9 @@ function genConnectNode (symbolEle: ElementCompact, connectNodeMap: Map<string, 
   }
 
   port.id = name
+  port.args = { x, y }
   port.attrs = {
-    portBody: { cx: x - pointW / 2, cy: y - pointW / 2, r: pointW / 2, fill: fillcolor, stroke },
+    portBody: { cx: 0, cy: 0, r: pointW / 2, fill: fillcolor, stroke },
     label: { text: name }
   }
 
@@ -442,8 +435,7 @@ function genConnectNode (symbolEle: ElementCompact, connectNodeMap: Map<string, 
 }
 
 function genConnectNodeText (symbolEle: ElementCompact, connectNodeMap: Map<string, dia.Element.Port>) {
-  let fontFamily, fontColor, fontSize, fontStyle, fontWeight, textDecorationLine, textAnchor, dominantBaseline,
-    textContent, x, y
+  let fontFamily, fontColor, fontSize, fontStyle, fontWeight, textDecorationLine, textAnchor, textContent
   for (const dgEle of symbolEle.elements) {
     if (/DATA/.test(dgEle.name)) {
       if (R.isNotEmpty(dgEle.elements)) {
@@ -463,10 +455,7 @@ function genConnectNodeText (symbolEle: ElementCompact, connectNodeMap: Map<stri
         fontWeight,
         textDecorationLine,
         textAnchor,
-        dominantBaseline,
-        textContent,
-        x,
-        y
+        textContent
       } = graphEle2TextAttr(dgEle))
     }
   }
@@ -479,8 +468,8 @@ function genConnectNodeText (symbolEle: ElementCompact, connectNodeMap: Map<stri
     // }
     const attrs = port.attrs
     if (attrs && attrs.label) {
-      attrs.label.x = x
-      attrs.label.y = y
+      // attrs.label.x = x
+      // attrs.label.y = y
       attrs.label.fill = fontColor
       attrs.label.fontFamily = fontFamily
       attrs.label.fontSize = fontSize + 'px'
@@ -494,9 +483,9 @@ function genConnectNodeText (symbolEle: ElementCompact, connectNodeMap: Map<stri
       if (textAnchor) {
         attrs.label.textAnchor = textAnchor
       }
-      if (dominantBaseline) {
-        attrs.label.dominantBaseline = dominantBaseline
-      }
+      // if (dominantBaseline) {
+      //   attrs.label.dominantBaseline = dominantBaseline
+      // }
     }
     port.attrs = attrs
 
