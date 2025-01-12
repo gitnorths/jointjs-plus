@@ -3,7 +3,6 @@ import * as R from 'ramda'
 import VBus from '@/renderer/common/vbus'
 import store from '@/renderer/pages/nextStudio/store'
 import { MessageBox } from 'element-ui'
-import { mxStencilRegistry } from '@/renderer/common/mxgraph'
 import { DEVICE_FILE_NAME } from '@/util/consts'
 import { getFirstPath, noNilAndEmptyRule } from '@/renderer/common/util'
 import notification from '@/renderer/common/notification'
@@ -37,7 +36,6 @@ const clearState = async () => {
 
   store.commit('clearTags')
 
-  store.commit('clearGraphContainer')
   store.commit('setWindowCatalogViewIsVisible', false)
   store.commit('setWindowVariableViewIsVisible', false)
   store.commit('setWindowOutputViewIsVisible', false)
@@ -45,9 +43,6 @@ const clearState = async () => {
   store.commit('setDevice', null)
   store.commit('setArchiveProtos', [])
   store.commit('clearSymbolProtoMap')
-  for (const key in mxStencilRegistry.stencils) {
-    delete mxStencilRegistry.stencils[key]
-  }
   store.commit('clearVarTreeStore')
   store.commit('setTplDataType', null)
   store.commit('setTplKEMAType', null)

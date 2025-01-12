@@ -43,7 +43,6 @@
 
 <script>
 import { deltaStatus } from '../util'
-import { mxGraph, mxStencil, mxStencilRegistry, mxUtils } from '@/renderer/common/mxgraph'
 import { VariableTypeEnum } from '@/model/enum'
 import { objDiff } from '@/renderer/common/util'
 
@@ -120,19 +119,10 @@ export default {
       if (/VisualFuncBlock/.test(obj.clazzName)) {
         // graph
         this.$nextTick(() => {
-          this.leftGraph = this.initMxGraph(this.$refs.leftContainer)
           this.addSymbolToGraph(leftObj, this.leftGraph, true)
-          this.rightGraph = this.initMxGraph(this.$refs.rightContainer)
           this.addSymbolToGraph(rightObj, this.rightGraph, false)
         })
       }
-    },
-    initMxGraph (container) {
-      const graph = new mxGraph(container)
-      graph.setEnabled(false)
-      graph.centerZoom = false
-      graph.view.scale = 2
-      return graph
     },
     zoomIn () {
       if (this.leftGraph) {
@@ -151,32 +141,10 @@ export default {
       }
     },
     addSymbolToGraph (symbol, graph, fromLeft) {
-      if (!symbol || !symbol.graphic) {
-        return
-      }
-      let vertex = null
-      graph.getModel().beginUpdate()
-      try {
-        const parent = graph.getDefaultParent()
-        const shape = mxUtils.parseXml(symbol.graphic).firstChild
-        const width = shape.getAttribute('w')
-        const height = shape.getAttribute('h')
-        const name = shape.getAttribute('name')
-        const stencilName = fromLeft ? 'left_' + name : 'right_' + name
-        this.tempStencil.push(stencilName)
-        mxStencilRegistry.addStencil(stencilName, new mxStencil(shape))
-
-        vertex = graph.insertVertex(parent, null, null, 0, 0, width, height, `shape=${stencilName};resizable=0;fillColor=white;`)
-      } finally {
-        graph.getModel().endUpdate()
-      }
-      graph.scrollCellToVisible(vertex, true)
+      // todo
     },
     clearTempStencil () {
-      if (R.isNotEmpty(this.tempStencil)) {
-        this.tempStencil.forEach(name => mxStencilRegistry.addStencil(name, undefined))
-        this.tempStencil = []
-      }
+      // todo
     },
     clearStatus () {
       this.tableData = null
