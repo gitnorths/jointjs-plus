@@ -4,7 +4,6 @@ import Vuex from 'vuex'
 import appStore from './appStore'
 import DeviceStore from './DeviceStore'
 import VarTreeConfigStore from './VarTreeConfigStore'
-import graphStore from './graphStore'
 import workTagsStore from './workTagsStore'
 import vfbInstDialogStore from './vfbInstDialogStore'
 import DebugModeStore from './debugModeStore'
@@ -15,7 +14,6 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   modules: {
     appStore,
-    graphStore,
     VarTreeConfigStore,
     dtoStore: DeviceStore,
     workTagsStore,

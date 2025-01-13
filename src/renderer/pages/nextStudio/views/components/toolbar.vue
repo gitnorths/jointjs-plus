@@ -116,7 +116,6 @@
 
 <script>
 import * as R from 'ramda'
-import { mxEvent, mxUtils } from '@/renderer/common/mxgraph'
 import {
   enterDebugMode,
   generateConfigFile,
@@ -200,9 +199,6 @@ export default {
     showGraphToolBar () {
       return this.deviceDto && !this.debugMode && this.activeDto && this.activeDto instanceof Page
     },
-    graphs () {
-      return this.$store.getters.projectGraphContainer
-    },
     graph () {
       return R.find(R.propEq(this.activeKey, 'tagKey'))(this.graphs)
     },
@@ -280,15 +276,6 @@ export default {
     }
   },
   methods: {
-    getCurrentGraph () {
-      return (evt) => {
-        const x = mxEvent.getClientX(evt)
-        const y = mxEvent.getClientY(evt)
-        const elt = document.elementFromPoint(x, y)
-        const filterFunc = R.compose(R.head, R.filter((graph) => mxUtils.isAncestorNode(R.propOr({}, 'container', graph), elt)))
-        return filterFunc(this.graphs)
-      }
-    },
     createDragPreview (width, height) {
       const elt = document.createElement('div')
       elt.style.border = '2px dotted black'
@@ -309,12 +296,7 @@ export default {
       items.forEach((item) => {
         const pathId = item.$el.getAttribute('pathId')
         const size = GraphSizeMap[pathId]
-        if (size) {
-          const width = size.w
-          const height = size.h
-          const funct = (graph, evt, cell, x, y) => graph.instanceBaseSymbol({ pathId, x, y })
-          mxUtils.makeDraggable(item.$el, this.getCurrentGraph(), funct, this.createDragPreview(width, height), 0, 0, false, true)
-        }
+        // FIXME
       })
     },
     initAnnotationDraggable () {
@@ -326,12 +308,9 @@ export default {
       if (!(items instanceof Array)) {
         items = [items]
       }
-      const width = 60
-      const height = 80
       items.forEach(item => {
-        const color = item.$el.getAttribute('colorStr')
-        const funct = (graph, evt, cell, x, y) => graph.instanceAnnotation({ x, y, width, height, color })
-        mxUtils.makeDraggable(item.$el, this.getCurrentGraph(), funct, this.createDragPreview(width, height), 0, 0, false, true)
+        item.$el.getAttribute('colorStr')
+        // fixme
       })
     },
     toolBtnClickHandler (item) {

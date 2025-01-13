@@ -54,7 +54,6 @@
 
 <script>
 import * as R from 'ramda'
-import { mxEvent, mxUtils } from '@/renderer/common/mxgraph'
 import { getDeviceSymbol } from '@/renderer/pages/nextStudio/action'
 import TipGraph from './tipGraph.vue'
 import { ProtoSymbolBlock } from '@/model/dto'
@@ -70,9 +69,6 @@ export default {
     },
     loading () {
       return this.$store.getters.symbolProtoLoading
-    },
-    graphs () {
-      return this.$store.getters.projectGraphContainer
     },
     archiveProtoList () {
       return this.$store.getters.archiveProtoList
@@ -161,13 +157,6 @@ export default {
       }
     },
     makeSymbolDraggable () {
-      const getCurrentGraph = (evt) => {
-        const x = mxEvent.getClientX(evt)
-        const y = mxEvent.getClientY(evt)
-        const elt = document.elementFromPoint(x, y)
-        const filterFunc = R.compose(R.head, R.filter((graph) => mxUtils.isAncestorNode(R.propOr({}, 'container', graph), elt)))
-        return filterFunc(this.graphs)
-      }
       const makeDraggable = (item) => {
         const pathId = item.getAttribute('id')
         if (R.isNil(pathId)) {
@@ -177,26 +166,6 @@ export default {
         if (R.isNil(symbol)) {
           return
         }
-        const shape = mxUtils.parseXml(R.prop('graph', symbol)).firstChild
-        const width = shape.getAttribute('w')
-        const height = shape.getAttribute('h')
-        const instanceSymbol = (graph, evt, cell, x, y) => {
-          graph.instanceSymbol(symbol)(x, y)
-        }
-        const createDragPreview = () => {
-          const elt = document.createElement('div')
-
-          elt.style.border = '2px dotted black'
-          elt.style.width = width + 'px'
-          elt.style.height = height + 'px'
-          return elt
-        }
-        mxUtils.makeDraggable(item, getCurrentGraph, instanceSymbol, createDragPreview(), 0, 0, false, true)
-
-        // FIXME 新建功能块不开启对齐，和复制粘贴一起开启
-        // dragSource.isGuidesEnabled = function () {
-        //   return true
-        // };
 
         item.setAttribute('makeDraggable', true)
       }

@@ -1,194 +1,239 @@
 import { ipcRenderer } from 'electron'
 import { MessageBox } from 'element-ui'
 import * as R from 'ramda'
-import * as xmlBuilder from 'xmlbuilder'
-import { mxStencil, mxStencilRegistry, mxUtils } from '@/renderer/common/mxgraph'
+import { dia } from '@joint/plus'
 import store from '@/renderer/pages/nextStudio/store'
 import notification from '@/renderer/common/notification'
 import VBus from '@/renderer/common/vbus'
 import { ProtoSymbolArchive, ProtoSymbolBlock, ProtoSymbolLib } from '@/model/dto'
-
-const addToStencilRegistry = (stencil) => {
-  const xmlNode = mxUtils.parseXml(stencil)
-  const shape = xmlNode.firstChild
-  const name = shape.getAttribute('name')
-  const newStencil = new mxStencil(shape)
-  mxStencilRegistry.addStencil(name, newStencil)
-}
-
-const addSymbol = (symbolBlockProto) => {
-  store.commit('addSymbolProtoToMap', symbolBlockProto)
-  if (symbolBlockProto.graphic) {
-    addToStencilRegistry(symbolBlockProto.graphic)
-  }
-}
+import { formatPathIdType } from '@/util'
 
 const addArchiveToStencilRegistry = (archiveList) => {
   if (!archiveList || R.isEmpty(archiveList)) {
     return
   }
-  R.compose(
-    R.forEach(addSymbol),
-    R.flatten(),
-    R.pluck('children'),
-    R.flatten(),
-    R.pluck('children')
-  )(archiveList)
+  // 要先清理一下除了base之外的库
+  const namespace = {}
+  const oldNamespace = store.getters.symbolNameSpace
+  namespace.base = oldNamespace.base
+
+  for (const archive of archiveList) {
+    const archiveNameSpace = namespace[archive.name.toLowerCase()] || {}
+    if (R.isNotEmpty(archive.children)) {
+      for (const lib of archive.children) {
+        const libNameSpace = archiveNameSpace[lib.name.toLowerCase()] || {}
+        if (R.isNotEmpty(lib.children)) {
+          for (const symbolBlockProto of lib.children) {
+            store.commit('addSymbolProtoToMap', symbolBlockProto)
+
+            const symbolNameSpace = libNameSpace[symbolBlockProto.name.toLowerCase()] || {}
+            // 将pathId改为.拼接，用于namespace
+            const type = formatPathIdType(symbolBlockProto.pathId)
+            symbolNameSpace[symbolBlockProto.version.toLowerCase()] = dia.Element.define(type, JSON.parse(symbolBlockProto.graphic))
+            libNameSpace[symbolBlockProto.name.toLowerCase()] = symbolNameSpace
+          }
+        }
+        archiveNameSpace[lib.name.toLowerCase()] = libNameSpace
+      }
+    }
+    namespace[archive.name.toLowerCase()] = archiveNameSpace
+  }
+  store.commit('setSymbolNameSpace', namespace)
 }
 
 const ConstraintDotSize = { w: 2, h: 2 }
 
 export const GraphSizeMap = {
-  'base/extend/labelin/1.0': { w: 95, h: 10 },
-  'base/extend/labelout/1.0': { w: 95, h: 10 },
-  'base/extend/cconstblock/1.0': { w: 95, h: 10 }
+  'base/extend/labelin/v1r0p0': { w: 95, h: 10 },
+  'base/extend/labelout/v1r0p0': { w: 95, h: 10 },
+  'base/extend/cconstblock/v1r0p0': { w: 95, h: 10 }
 }
 
 function getLabelInGraph () {
-  const name = 'base/extend/labelin/1.0'
+  const name = 'base/extend/labelin/v1r0p0'
+  const type = formatPathIdType(name)
+  const markupJson = []
   const LabelGraphSize = GraphSizeMap[name]
-  const shape = xmlBuilder.create('shape', { headless: true, keepNullAttributes: false })
-    .att('name', name)
-    .att('w', LabelGraphSize.w)
-    .att('h', LabelGraphSize.h)
-    .att('aspect', 'variable')
-    .att('strokewidth', 'inherit')
-  const connections = shape.ele('connections')
-  connections.ele('constraint', { name: 'OUT', x: 1, y: 0.5, perimeter: '0' })
-
-  const background = shape.ele('background')
-
-  const pathNode = background.ele('path')
-  pathNode.ele('move', { x: 0, y: LabelGraphSize.h })
-  pathNode.ele('line', { x: LabelGraphSize.w - (LabelGraphSize.h / 2), y: LabelGraphSize.h })
-  pathNode.ele('line', { x: LabelGraphSize.w, y: LabelGraphSize.h / 2 })
-  pathNode.ele('line', { x: LabelGraphSize.w - (LabelGraphSize.h / 2), y: 0 })
-  pathNode.ele('line', { x: 0, y: 0 })
-  pathNode.ele('close')
-
-  const foreground = shape.ele('foreground')
-  foreground.ele('fillstroke')
-
-  foreground.ele('fontfamily', { family: 'Arial' })
-  foreground.ele('fontsize', { size: 6 })
-  foreground.ele('text', {
-    str: 'name', // FIXME instName or desc or abbr // TODO value
-    x: 0.8333333333333334,
-    y: 2.0833333333333335,
-    localized: 1
+  const jointGraphJson = {
+    type,
+    markup: '',
+    size: { width: LabelGraphSize.w, height: LabelGraphSize.h },
+    attr: {},
+    ports: {
+      items: []
+    }
+  }
+  const d = `M 0 ${LabelGraphSize.h} ` +
+    `L ${LabelGraphSize.w - (LabelGraphSize.h / 2)} ${LabelGraphSize.h} ` +
+    `L ${LabelGraphSize.w} ${LabelGraphSize.h / 2} ` +
+    `L ${LabelGraphSize.w - (LabelGraphSize.h / 2)} 0 ` +
+    'L 0 0 ' +
+    'Z'
+  markupJson.push({
+    tagName: 'path',
+    attributes: { d, strokeWidth: '1', stroke: '#000000', fill: '#ffffff' }
   })
 
-  foreground.ele('ellipse', {
-    w: ConstraintDotSize.w,
-    h: ConstraintDotSize.h,
-    x: LabelGraphSize.w - (ConstraintDotSize.w / 2),
-    y: (LabelGraphSize.h / 2) - (ConstraintDotSize.h / 2)
-  })
-  foreground.ele('fillstroke')
+  jointGraphJson.markup = markupJson
 
-  return shape.end()
+  const port = {
+    id: 'OUT',
+    markup: [{ tagName: 'circle', selector: 'portBody' }],
+    attrs: {
+      label: {
+        fontFamily: 'Arial',
+        fontSize: '6px'
+      },
+      portBody: {
+        magnet: true,
+        cx: LabelGraphSize.w - (ConstraintDotSize.w / 2),
+        cy: LabelGraphSize.h / 2,
+        r: ConstraintDotSize.w / 2,
+        fill: '#ffffff',
+        stroke: '#000000'
+      }
+    },
+    label: {
+      text: '',
+      markup: [{ tagName: 'text', selector: 'label' }],
+      position: { name: 'left', args: { y: 6 } }
+    }
+  }
+  jointGraphJson.ports.items.push(port)
+
+  // 使用jointjs的toJSON方法
+  const element = new dia.Element(jointGraphJson)
+  element.set('id', name)
+  return dia.Element.define(type, element.toJSON())
 }
 
 function getLabelOutGraph () {
-  const name = 'base/extend/labelout/1.0'
+  const name = 'base/extend/labelout/v1r0p0'
+  const type = formatPathIdType(name)
+  const markupJson = []
   const LabelGraphSize = GraphSizeMap[name]
-  const shape = xmlBuilder.create('shape', { headless: true, keepNullAttributes: false })
-    .att('name', name)
-    .att('w', LabelGraphSize.w)
-    .att('h', LabelGraphSize.h)
-    .att('aspect', 'variable')
-    .att('strokewidth', 'inherit')
-  const connections = shape.ele('connections')
-  connections.ele('constraint', { name: 'IN', x: 0, y: 0.5, perimeter: '0' })
-
-  const background = shape.ele('background')
-
-  const pathNode = background.ele('path')
-  pathNode.ele('move', { x: LabelGraphSize.h / 2, y: 0 })
-  pathNode.ele('line', { x: 0, y: LabelGraphSize.h / 2 })
-  pathNode.ele('line', { x: LabelGraphSize.h / 2, y: LabelGraphSize.h })
-  pathNode.ele('line', { x: LabelGraphSize.w, y: LabelGraphSize.h })
-  pathNode.ele('line', { x: LabelGraphSize.w, y: 0 })
-  pathNode.ele('close')
-
-  const foreground = shape.ele('foreground')
-  foreground.ele('fillstroke')
-
-  foreground.ele('fontfamily', { family: 'Arial' })
-  foreground.ele('fontsize', { size: 6 })
-  foreground.ele('text', {
-    str: 'name', // FIXME instName or desc or abbr // TODO value
-    x: 5.833333333333333,
-    y: 2.0833333333333335,
-    localized: 1
+  const jointGraphJson = {
+    type,
+    markup: '',
+    size: { width: LabelGraphSize.w, height: LabelGraphSize.h },
+    attr: {},
+    ports: {
+      items: []
+    }
+  }
+  const d = `M ${LabelGraphSize.h / 2} 0 ` +
+    `L 0 ${LabelGraphSize.h / 2} ` +
+    `L ${LabelGraphSize.h / 2} ${LabelGraphSize.h} ` +
+    `L ${LabelGraphSize.w} ${LabelGraphSize.h} ` +
+    `L ${LabelGraphSize.w} 0 ` +
+    'Z'
+  markupJson.push({
+    tagName: 'path',
+    attributes: { d, strokeWidth: '1', stroke: '#000000', fill: '#ffffff' }
   })
 
-  foreground.ele('ellipse', {
-    w: ConstraintDotSize.w,
-    h: ConstraintDotSize.h,
-    x: 0 - (ConstraintDotSize.w / 2),
-    y: (LabelGraphSize.h / 2) - (ConstraintDotSize.h / 2)
-  })
-  foreground.ele('fillstroke')
+  jointGraphJson.markup = markupJson
 
-  return shape.end()
+  const port = {
+    id: 'IN',
+    markup: [{ tagName: 'circle', selector: 'portBody' }],
+    attrs: {
+      label: {
+        fontFamily: 'Arial',
+        fontSize: '6px'
+      },
+      portBody: {
+        magnet: true,
+        cx: 0 - (ConstraintDotSize.w / 2),
+        cy: LabelGraphSize.h / 2,
+        r: ConstraintDotSize.w / 2,
+        fill: '#ffffff',
+        stroke: '#000000'
+      }
+    },
+    label: {
+      text: '',
+      markup: [{ tagName: 'text', selector: 'label' }],
+      position: { name: 'left', args: { y: 6 } }
+    }
+  }
+  jointGraphJson.ports.items.push(port)
+
+  // 使用jointjs的toJSON方法
+  const element = new dia.Element(jointGraphJson)
+  element.set('id', name)
+  return dia.Element.define(type, element.toJSON())
 }
 
 function getConstGraph () {
-  const name = 'base/extend/CConstBlock/1.0'.toLowerCase()
+  const name = 'base/extend/CConstBlock/V1R0P0'.toLowerCase()
+  const type = formatPathIdType(name)
+  const markupJson = []
   const ConstGraphSize = GraphSizeMap[name]
-
-  const shape = xmlBuilder.create('shape', { headless: true, keepNullAttributes: false })
-    .att('name', name)
-    .att('w', ConstGraphSize.w)
-    .att('h', ConstGraphSize.h)
-    .att('aspect', 'variable')
-    .att('strokewidth', 'inherit')
-  const connections = shape.ele('connections')
-  connections.ele('constraint', { name: 'OUT', x: 1, y: 0.5, perimeter: '0' })
-
-  const background = shape.ele('background')
-
-  const pathNode = background.ele('path')
-  pathNode.ele('move', { x: 0, y: ConstGraphSize.h })
-  pathNode.ele('line', { x: ConstGraphSize.w, y: ConstGraphSize.h })
-  pathNode.ele('line', { x: ConstGraphSize.w, y: 0 })
-  pathNode.ele('line', { x: 0, y: 0 })
-  pathNode.ele('close')
-
-  const foreground = shape.ele('foreground')
-  foreground.ele('fillstroke')
-
-  foreground.ele('fontfamily', { family: 'Arial' })
-  foreground.ele('fontsize', { size: 6 })
-  foreground.ele('text', {
-    str: 'outputs.COut1.value', // FIXME instName or desc or abbr // TODO value
-    x: 0.8333333333333334,
-    y: 2.0833333333333335,
-    localized: 1
+  const jointGraphJson = {
+    type,
+    markup: '',
+    size: { width: ConstGraphSize.w, height: ConstGraphSize.h },
+    attr: {},
+    ports: {
+      items: []
+    }
+  }
+  const d = `M 0 ${ConstGraphSize.h} ` +
+    `L ${ConstGraphSize.w} ${ConstGraphSize.h} ` +
+    `L ${ConstGraphSize.w} 0 ` +
+    'L 0 0 ' +
+    'Z'
+  markupJson.push({
+    tagName: 'path',
+    attributes: { d, strokeWidth: '1', stroke: '#000000', fill: '#ffffff' }
   })
 
-  foreground.ele('ellipse', {
-    w: ConstraintDotSize.w,
-    h: ConstraintDotSize.h,
-    x: ConstGraphSize.w - (ConstraintDotSize.w / 2),
-    y: (ConstGraphSize.h / 2) - (ConstraintDotSize.h / 2)
-  })
-  foreground.ele('fillstroke')
+  jointGraphJson.markup = markupJson
 
-  return shape.end()
+  const port = {
+    id: 'OUT',
+    markup: [{ tagName: 'circle', selector: 'portBody' }],
+    attrs: {
+      label: {
+        fontFamily: 'Arial',
+        fontSize: '6px'
+      },
+      portBody: {
+        magnet: true,
+        cx: ConstGraphSize.w - (ConstGraphSize.w / 2),
+        cy: ConstGraphSize.h / 2,
+        r: ConstraintDotSize.w / 2,
+        fill: '#ffffff',
+        stroke: '#000000'
+      }
+    },
+    label: {
+      text: '',
+      markup: [{ tagName: 'text', selector: 'label' }],
+      position: { name: 'left', args: { y: 6 } }
+    }
+  }
+  jointGraphJson.ports.items.push(port)
+
+  // 使用jointjs的toJSON方法
+  const element = new dia.Element(jointGraphJson)
+  element.set('id', name)
+  return dia.Element.define(type, element.toJSON())
 }
 
 export const initToolBaseSymbol = () => {
-  // FIXME 添加LIN/LOUT/PageInfo的graph
-  const inGraph = getLabelInGraph()
-  addToStencilRegistry(inGraph)
-
-  const outGraph = getLabelOutGraph()
-  addToStencilRegistry(outGraph)
-
-  const constGraph = getConstGraph()
-  addToStencilRegistry(constGraph)
+  // FIXME 添加LIN/LOUT/Const的Graph
+  const namespace = {
+    base: {
+      extend: {
+        labelin: { v1r0p0: getLabelInGraph() },
+        labelout: { v1r0p0: getLabelOutGraph() },
+        cconstblock: { v1r0p0: getConstGraph() }
+      }
+    }
+  }
+  store.commit('setSymbolNameSpace', namespace)
 }
 
 const initArchiveProtos = (archive) => {
@@ -225,13 +270,6 @@ export const getDeviceSymbol = () => {
       const pkgList = value.map(archive => initArchiveProtos(archive))
       store.commit('setArchiveProtos', pkgList)
       VBus.$emit('REFRESH_ARCHIVE_PROTO')
-      // 清除原来的stencil
-      for (const key in mxStencilRegistry.stencils) {
-        // FIXME
-        if (!/^base\/extend\/(LabelIN|LabelOUT|CConstBlock)/i.test(key)) {
-          delete mxStencilRegistry.stencils[key]
-        }
-      }
       addArchiveToStencilRegistry(pkgList)
       notification.openInfoNotification('[SymbolTree] 符号库初始化完成').logger()
     })

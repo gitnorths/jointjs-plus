@@ -1,5 +1,6 @@
 export class HistoryStack {
   constructor (mxUndoManager) {
+    // FIXME
     if (this.mxUndoManager) {
       this.mxUndoManager.clear()
     }

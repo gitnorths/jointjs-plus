@@ -8,6 +8,7 @@ const DeviceStore = {
     device: null,
     symbolProtoLoading: false,
     archiveProtoList: [],
+    symbolNameSpace: {},
     symbolProtoMap: {},
     dataType: null,
     kemaType: null,
@@ -30,6 +31,9 @@ const DeviceStore = {
     },
     archiveProtoList: (state) => {
       return state.archiveProtoList
+    },
+    symbolNameSpace: (state) => {
+      return state.symbolNameSpace
     },
     symbolProtoMap: (state) => {
       return state.symbolProtoMap
@@ -62,6 +66,9 @@ const DeviceStore = {
     },
     setArchiveProtos (state, archiveProtoList) {
       state.archiveProtoList = archiveProtoList
+    },
+    setSymbolNameSpace (state, symbolNameSpace) {
+      state.symbolNameSpace = symbolNameSpace
     },
     addSymbolProtoToMap (state, symbolBlockProto) {
       Vue.set(state.symbolProtoMap, symbolBlockProto.pathId, symbolBlockProto)
