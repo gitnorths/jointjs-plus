@@ -46,7 +46,9 @@ const ConstraintDotSize = { w: 2, h: 2 }
 export const GraphSizeMap = {
   'base/extend/labelin/v1r0p0': { w: 95, h: 10 },
   'base/extend/labelout/v1r0p0': { w: 95, h: 10 },
-  'base/extend/cconstblock/v1r0p0': { w: 95, h: 10 }
+  'base/extend/cconstblock/v1r0p0': { w: 95, h: 10 },
+  'base/extend/cbrokencircleblock/v1r0p0': { w: 10, h: 10 },
+  'base/op/cast/v1r0p0': { w: 10, h: 10 }
 }
 
 function getLabelInGraph () {
@@ -60,6 +62,19 @@ function getLabelInGraph () {
     size: { width: LabelGraphSize.w, height: LabelGraphSize.h },
     attr: {},
     ports: {
+      groups: {
+        output: {
+          position: { name: 'absolute' },
+          markup: [{ tagName: 'circle', selector: 'portBody' }],
+          attrs: {
+            portBody: { magnet: true }
+          },
+          label: {
+            markup: [{ tagName: 'text', selector: 'label' }],
+            position: { name: 'left', args: { x: -6 } }
+          }
+        }
+      },
       items: []
     }
   }
@@ -77,26 +92,26 @@ function getLabelInGraph () {
   jointGraphJson.markup = markupJson
 
   const port = {
-    id: 'OUT',
+    id: 'LabelIn',
+    group: 'output',
     markup: [{ tagName: 'circle', selector: 'portBody' }],
     attrs: {
       label: {
         fontFamily: 'Arial',
-        fontSize: '6px'
+        fontSize: '6px',
+        text: ''
       },
       portBody: {
-        magnet: true,
-        cx: LabelGraphSize.w - (ConstraintDotSize.w / 2),
-        cy: LabelGraphSize.h / 2,
+        cx: 0,
+        cy: 0,
         r: ConstraintDotSize.w / 2,
         fill: '#ffffff',
         stroke: '#000000'
       }
     },
-    label: {
-      text: '',
-      markup: [{ tagName: 'text', selector: 'label' }],
-      position: { name: 'left', args: { y: 6 } }
+    args: {
+      x: LabelGraphSize.w,
+      y: LabelGraphSize.h / 2
     }
   }
   jointGraphJson.ports.items.push(port)
@@ -118,6 +133,19 @@ function getLabelOutGraph () {
     size: { width: LabelGraphSize.w, height: LabelGraphSize.h },
     attr: {},
     ports: {
+      groups: {
+        input: {
+          position: { name: 'absolute' },
+          markup: [{ tagName: 'circle', selector: 'portBody' }],
+          attrs: {
+            portBody: { magnet: true }
+          },
+          label: {
+            markup: [{ tagName: 'text', selector: 'label' }],
+            position: { name: 'right', args: { x: 6 } }
+          }
+        }
+      },
       items: []
     }
   }
@@ -135,26 +163,25 @@ function getLabelOutGraph () {
   jointGraphJson.markup = markupJson
 
   const port = {
-    id: 'IN',
-    markup: [{ tagName: 'circle', selector: 'portBody' }],
+    id: 'LabelOut',
+    group: 'input',
     attrs: {
       label: {
         fontFamily: 'Arial',
-        fontSize: '6px'
+        fontSize: '6px',
+        text: ''
       },
       portBody: {
-        magnet: true,
-        cx: 0 - (ConstraintDotSize.w / 2),
-        cy: LabelGraphSize.h / 2,
+        cx: 0,
+        cy: 0,
         r: ConstraintDotSize.w / 2,
         fill: '#ffffff',
         stroke: '#000000'
       }
     },
-    label: {
-      text: '',
-      markup: [{ tagName: 'text', selector: 'label' }],
-      position: { name: 'left', args: { y: 6 } }
+    args: {
+      x: 0,
+      y: LabelGraphSize.h / 2
     }
   }
   jointGraphJson.ports.items.push(port)
@@ -169,19 +196,32 @@ function getConstGraph () {
   const name = 'base/extend/CConstBlock/V1R0P0'.toLowerCase()
   const type = formatPathIdType(name)
   const markupJson = []
-  const ConstGraphSize = GraphSizeMap[name]
+  const graphSize = GraphSizeMap[name]
   const jointGraphJson = {
     type,
     markup: '',
-    size: { width: ConstGraphSize.w, height: ConstGraphSize.h },
+    size: { width: graphSize.w, height: graphSize.h },
     attr: {},
     ports: {
+      groups: {
+        output: {
+          position: { name: 'absolute' },
+          markup: [{ tagName: 'circle', selector: 'portBody' }],
+          attrs: {
+            portBody: { magnet: true }
+          },
+          label: {
+            markup: [{ tagName: 'text', selector: 'label' }],
+            position: { name: 'left', args: { x: -6 } }
+          }
+        }
+      },
       items: []
     }
   }
-  const d = `M 0 ${ConstGraphSize.h} ` +
-    `L ${ConstGraphSize.w} ${ConstGraphSize.h} ` +
-    `L ${ConstGraphSize.w} 0 ` +
+  const d = `M 0 ${graphSize.h} ` +
+    `L ${graphSize.w} ${graphSize.h} ` +
+    `L ${graphSize.w} 0 ` +
     'L 0 0 ' +
     'Z'
   markupJson.push({
@@ -192,29 +232,244 @@ function getConstGraph () {
   jointGraphJson.markup = markupJson
 
   const port = {
-    id: 'OUT',
-    markup: [{ tagName: 'circle', selector: 'portBody' }],
+    id: 'COut1',
+    group: 'output',
     attrs: {
       label: {
         fontFamily: 'Arial',
-        fontSize: '6px'
+        fontSize: '6px',
+        text: ''
       },
       portBody: {
         magnet: true,
-        cx: ConstGraphSize.w - (ConstGraphSize.w / 2),
-        cy: ConstGraphSize.h / 2,
+        cx: 0,
+        cy: 0,
         r: ConstraintDotSize.w / 2,
         fill: '#ffffff',
         stroke: '#000000'
       }
     },
-    label: {
-      text: '',
-      markup: [{ tagName: 'text', selector: 'label' }],
-      position: { name: 'left', args: { y: 6 } }
+    args: {
+      x: graphSize.w,
+      y: graphSize.h / 2
     }
   }
   jointGraphJson.ports.items.push(port)
+
+  // 使用jointjs的toJSON方法
+  const element = new dia.Element(jointGraphJson)
+  element.set('id', name)
+  return dia.Element.define(type, element.toJSON())
+}
+
+function getBreakCircleGraph () {
+  const name = 'base/extend/CBrokenCircleBlock/V1R0P0'.toLowerCase()
+  const type = formatPathIdType(name)
+  const markupJson = []
+  const graphSize = GraphSizeMap[name]
+  const jointGraphJson = {
+    type,
+    markup: '',
+    size: { width: graphSize.w, height: graphSize.h },
+    attr: {},
+    ports: {
+      groups: {
+        input: {
+          position: { name: 'absolute' },
+          markup: [{ tagName: 'circle', selector: 'portBody' }],
+          attrs: {
+            portBody: { magnet: true }
+          },
+          label: {
+            markup: [{ tagName: 'text', selector: 'label' }],
+            position: { name: 'right', args: { x: 6 } }
+          }
+        },
+        output: {
+          position: { name: 'absolute' },
+          markup: [{ tagName: 'circle', selector: 'portBody' }],
+          attrs: {
+            portBody: { magnet: true }
+          },
+          label: {
+            markup: [{ tagName: 'text', selector: 'label' }],
+            position: { name: 'left', args: { x: -6 } }
+          }
+        }
+      },
+      items: []
+    }
+  }
+  markupJson.push({
+    tagName: 'circle',
+    attributes: {
+      cx: graphSize.w / 2,
+      cy: graphSize.h / 2,
+      r: graphSize.w / 2,
+      strokeWidth: '1',
+      stroke: '#000000',
+      fill: '#ffffff'
+    }
+  })
+
+  jointGraphJson.markup = markupJson
+
+  const inputPort = {
+    id: 'cIn1',
+    group: 'input',
+    attrs: {
+      label: {
+        fontFamily: 'Arial',
+        fontSize: '6px',
+        text: ''
+      },
+      portBody: {
+        magnet: true,
+        cx: 0,
+        cy: 0,
+        r: ConstraintDotSize.w / 2,
+        fill: '#ffffff',
+        stroke: '#000000'
+      }
+    },
+    args: {
+      x: 0,
+      y: graphSize.h / 2
+    }
+  }
+  const outputPort = {
+    id: 'cOut1',
+    group: 'output',
+    attrs: {
+      label: {
+        fontFamily: 'Arial',
+        fontSize: '6px',
+        text: ''
+      },
+      portBody: {
+        magnet: true,
+        cx: 0,
+        cy: 0,
+        r: ConstraintDotSize.w / 2,
+        fill: '#ffffff',
+        stroke: '#000000'
+      }
+    },
+    args: {
+      x: graphSize.w,
+      y: graphSize.h / 2
+    }
+  }
+  jointGraphJson.ports.items.push(inputPort)
+  jointGraphJson.ports.items.push(outputPort)
+
+  // 使用jointjs的toJSON方法
+  const element = new dia.Element(jointGraphJson)
+  element.set('id', name)
+  return dia.Element.define(type, element.toJSON())
+}
+
+function getCastGraph () {
+  const name = 'base/op/Cast/V1R0P0'.toLowerCase()
+  const type = formatPathIdType(name)
+  const markupJson = []
+  const graphSize = GraphSizeMap[name]
+  const jointGraphJson = {
+    type,
+    markup: '',
+    size: { width: graphSize.w, height: graphSize.h },
+    attr: {},
+    ports: {
+      groups: {
+        input: {
+          position: { name: 'absolute' },
+          markup: [{ tagName: 'circle', selector: 'portBody' }],
+          attrs: {
+            portBody: { magnet: true }
+          },
+          label: {
+            markup: [{ tagName: 'text', selector: 'label' }],
+            position: { name: 'right', args: { x: 6 } }
+          }
+        },
+        output: {
+          position: { name: 'absolute' },
+          markup: [{ tagName: 'circle', selector: 'portBody' }],
+          attrs: {
+            portBody: { magnet: true }
+          },
+          label: {
+            markup: [{ tagName: 'text', selector: 'label' }],
+            position: { name: 'left', args: { x: -6 } }
+          }
+        }
+      },
+      items: []
+    }
+  }
+  markupJson.push({
+    tagName: 'rect',
+    attributes: {
+      x: 0,
+      y: 0,
+      width: graphSize.w,
+      height: graphSize.h,
+      strokeWidth: '1',
+      stroke: '#000000',
+      fill: '#ffffff'
+    }
+  })
+
+  jointGraphJson.markup = markupJson
+
+  const inputPort = {
+    id: 'CIn',
+    group: 'input',
+    attrs: {
+      label: {
+        fontFamily: 'Arial',
+        fontSize: '6px',
+        text: ''
+      },
+      portBody: {
+        magnet: true,
+        cx: 0,
+        cy: 0,
+        r: ConstraintDotSize.w / 2,
+        fill: '#ffffff',
+        stroke: '#000000'
+      }
+    },
+    args: {
+      x: 0,
+      y: graphSize.h / 2
+    }
+  }
+  const outputPort = {
+    id: 'COut',
+    group: 'output',
+    attrs: {
+      label: {
+        fontFamily: 'Arial',
+        fontSize: '6px',
+        text: ''
+      },
+      portBody: {
+        magnet: true,
+        cx: 0,
+        cy: 0,
+        r: ConstraintDotSize.w / 2,
+        fill: '#ffffff',
+        stroke: '#000000'
+      }
+    },
+    args: {
+      x: graphSize.w,
+      y: graphSize.h / 2
+    }
+  }
+  jointGraphJson.ports.items.push(inputPort)
+  jointGraphJson.ports.items.push(outputPort)
 
   // 使用jointjs的toJSON方法
   const element = new dia.Element(jointGraphJson)
@@ -229,7 +484,11 @@ export const initToolBaseSymbol = () => {
       extend: {
         labelin: { v1r0p0: getLabelInGraph() },
         labelout: { v1r0p0: getLabelOutGraph() },
-        cconstblock: { v1r0p0: getConstGraph() }
+        cconstblock: { v1r0p0: getConstGraph() },
+        cbrokencircleblock: { v1r0p0: getBreakCircleGraph() }
+      },
+      op: {
+        cast: { v1r0p0: getCastGraph() }
       }
     }
   }

@@ -86,18 +86,32 @@ export default {
       const typeArr = block.pathId.split('/')
       const ctr = R.path(typeArr, this.symbolNameSpace)
       const symbolBlock = new ctr()
-      console.log(symbolBlock)
+      symbolBlock.set('id', block.id)
       symbolBlock.position(block.x, block.y)
       symbolBlock.addTo(this.graph)
     },
-    addLabelToGraph (annotation) {
-      // TODO
+    addLabelToGraph (label) {
+      const typeArr = label.pathId.split('/')
+      const ctr = R.path(typeArr, this.symbolNameSpace)
+      const symbolBlock = new ctr()
+      symbolBlock.set('id', label.id)
+      symbolBlock.position(label.x, label.y)
+      symbolBlock.addTo(this.graph)
     },
     addAnnotationToGraph (annotation) {
       // TODO
     },
     addLineToGraph (line) {
-      // TODO
+      const link = new shapes.standard.Link({
+        source: { id: line.headNodeId, port: line.headName },
+        target: { id: line.tailNodeId, port: line.tailName }
+      })
+      if (line.routerPoints && R.isNotEmpty(line.routerPoints)) {
+        link.vertices(line.routerPoints.map(routePoint => ({
+          x: routePoint.x, y: routePoint.y
+        })))
+      }
+      link.addTo(this.graph)
     },
     addCellToGraph ({ symbolBlocks, connectLines, annotations, inLabels, outLabels }) {
       if (symbolBlocks && symbolBlocks.length > 0) {
@@ -142,7 +156,8 @@ export default {
 
             this.recordSet = { insertRecords: [], updateRecords: [], removeRecords: [] }
             this.recordDelta()
-            this.historyStack.clear()
+            // FIXME
+            // this.historyStack.clear()
             this.focus(this.focusedVfbId)
           }
         }).catch((e) => {

@@ -70,7 +70,6 @@ import {
   SymbolTypeEnum,
   TaskLevelEnum,
   TripTypeEnum,
-  VariableTypeEnum,
   WaveAttrEnum,
   WaveFrequencyTypeEnum,
   WaveLevelEnum,
@@ -594,13 +593,13 @@ export class DeviceLoader {
           for (const varEle of childVarListEle.elements) {
             const { name } = varEle.attributes
             // cconstblock_1_205.COut1
-            const varName = name.replace(`${symbolBlock.instName}.`, '')
+            // const varName = name.replace(`${symbolBlock.instName}.`, '')
             const output = new SymbolBlockVarOutputInst({
               id: uuid(),
               index: 0,
-              name: varName,
+              name: 'COut1',
               searchPath: `${symbolBlock.searchPath}/${name}`,
-              pathId: `${symbolBlock.pathId}/${varName}`.toLowerCase(),
+              pathId: `${symbolBlock.pathId}/COut1`.toLowerCase(),
               symbolBlockId: symbolBlock.id
             })
             for (const varAttrEle of varEle.elements) {
@@ -618,10 +617,50 @@ export class DeviceLoader {
             symbolBlock.outputs.push(output)
           }
           page.symbolBlocks.push(symbolBlock)
-        } else if (/(extend\/CBrokenCircleBlock)|(OP\/cast)/.test(symbol_version)) {
+        } else if (/(extend\/CBrokenCircleBlock)/.test(symbol_version)) {
           const symbolBlock = new SymbolBlockInst({
             id: uuid(),
-            name: /CBrokenCircleBlock/.test(symbol_version) ? 'CBrokenCircleBlock' : 'Cast',
+            name: 'CBrokenCircleBlock',
+            instName: name,
+            status: EnableStatusEnum.ON,
+            type: SymbolTypeEnum.SYM_EXTEND, // FIXME
+            pathId: `base${formatVersion(symbol_version)}`.toLowerCase(),
+            searchPath: `${page.searchPath}/${name}`
+          })
+          if (R.isNotEmpty(symbolEle.elements)) {
+            const childVarListEle = symbolEle.elements[0]
+            for (const varEle of childVarListEle.elements) {
+              const { symbol_var, name } = varEle.attributes
+              const varName = name.replace(`${symbolBlock.instName}.`, '')
+              let io
+              if (/CIn/i.test(symbol_var)) {
+                io = new SymbolBlockVarInputInst({
+                  id: uuid(),
+                  name: varName || 'cIn1',
+                  index: 0,
+                  searchPath: `${symbolBlock.searchPath}/${name}`,
+                  pathId: `${symbolBlock.pathId}/${varName}`.toLowerCase(),
+                  symbolBlockId: symbolBlock.id
+                })
+                symbolBlock.inputs.push(io)
+              } else {
+                io = new SymbolBlockVarOutputInst({
+                  id: uuid(),
+                  name: varName || 'cOut1',
+                  index: 0,
+                  searchPath: `${symbolBlock.searchPath}/${name}`,
+                  pathId: `${symbolBlock.pathId}/${varName}`.toLowerCase(),
+                  symbolBlockId: symbolBlock.id
+                })
+                symbolBlock.outputs.push(io)
+              }
+            }
+          }
+          page.symbolBlocks.push(symbolBlock)
+        } else if (/(OP\/cast)/.test(symbol_version)) {
+          const symbolBlock = new SymbolBlockInst({
+            id: uuid(),
+            name: 'Cast',
             instName: name,
             status: EnableStatusEnum.ON,
             type: SymbolTypeEnum.SYM_EXTEND, // FIXME
@@ -1320,13 +1359,13 @@ export class DeviceLoader {
           // name="cconstblock_1_205.COut1" tr_desc="DWC" xxoid="14:1667:2">
           const { name, tr_desc } = varEle.attributes
           // cconstblock_1_205.COut1
-          const varName = name.replace(`${symbolBlock.instName}.`, '')
+          // const varName = name.replace(`${symbolBlock.instName}.`, '')
           const output = new SymbolBlockVarOutputInst({
             id: uuid(),
             index: 0,
-            name: varName,
+            name: 'COut1',
             customDesc: this.getDescFromTRDesc(tr_desc),
-            pathId: `${symbolBlock.pathId}/${varName}`.toLowerCase(),
+            pathId: `${symbolBlock.pathId}/COut1`.toLowerCase(),
             searchPath: `${symbolBlock.searchPath}/${name}`,
             symbolBlockId: symbolBlock.id
           })
@@ -1338,9 +1377,6 @@ export class DeviceLoader {
             } else if (name === 'default') {
               output.default = value
             } else if (name === 'name') {
-              // 有值说明为具名常量，用作自定义定值
-              // 该名称作为注册变量名
-              // 修改常量实例名为customDefineParam
               if (value) {
                 output.regName = value
               }
@@ -1349,24 +1385,72 @@ export class DeviceLoader {
             } else if (name === 'value') {
               output.value = value
             } else if (name === 'unit') {
+              // 有值说明为具名常量，用作自定义定值
+              // 修改常量实例名为customDefineParam
               output.unit = value
             }
           }
-          if (output.regName === VariableTypeEnum[output.type]) {
-            // value的值和type相同，说明没有修改过
-            output.regName = ''
+          if (output.unit) {
+            // unit有值说明是自定义定值符号
             symbolBlock.desc = CUSTOM_PARAM_INST_NAME
-          }
-          if (output.regName) {
             output.sAddr = `${saddrPrefix}.${CUSTOM_PARAM_INST_NAME}.${output.regName}` // 自定义参数使用 BXX._customParmDefine.value的作为短地址
           }
           symbolBlock.outputs.push(output)
         }
         page.symbolBlocks.push(symbolBlock)
-      } else if (/(extend\/CBrokenCircleBlock)|(OP\/cast)/.test(Ref_symbol_path)) {
+      } else if (/(extend\/CBrokenCircleBlock)/.test(Ref_symbol_path)) {
         const symbolBlock = new SymbolBlockInst({
           id: uuid(),
-          name: /CBrokenCircleBlock/.test(Ref_symbol_path) ? 'CBrokenCircleBlock' : 'Cast',
+          name: 'CBrokenCircleBlock',
+          instName: name,
+          status: EnableStatusEnum.ON,
+          pathId: `base${formatVersion(Ref_symbol_path)}`.toLowerCase(),
+          type: SymbolTypeEnum.SYM_EXTEND,
+          abbr,
+          searchPath: `${page.searchPath}/${name}`,
+          x: Number(x),
+          y: Number(y)
+        })
+        if (R.isNotEmpty(pageSymbolEle.elements)) {
+          for (const varEle of pageSymbolEle.elements) {
+            const { Ref_symbol_var_path, name, tr_desc } = varEle.attributes
+            const varName = name.replace(`${symbolBlock.instName}.`, '')
+            let io
+            if (/CIn/i.test(Ref_symbol_var_path)) {
+              io = new SymbolBlockVarInputInst({
+                id: uuid(),
+                name: varName || 'cIn1',
+                index: 0,
+                regName: varName || 'cIn1',
+                customDesc: this.getDescFromTRDesc(tr_desc),
+                searchPath: `${symbolBlock.searchPath}/${name}`,
+                pathId: `${symbolBlock.pathId}/${varName}`.toLowerCase(),
+                symbolBlockId: symbolBlock.id
+              })
+              this.signalMap.set(io.searchPath, io)
+              symbolBlock.inputs.push(io)
+            } else {
+              io = new SymbolBlockVarOutputInst({
+                id: uuid(),
+                name: varName || 'cOut1',
+                index: 0,
+                regName: varName || 'cOut1',
+                customDesc: this.getDescFromTRDesc(tr_desc),
+                searchPath: `${symbolBlock.searchPath}/${name}`,
+                pathId: `${symbolBlock.pathId}/${varName}`.toLowerCase(),
+                symbolBlockId: symbolBlock.id
+              })
+
+              this.signalMap.set(io.searchPath, io)
+              symbolBlock.outputs.push(io)
+            }
+          }
+        }
+        page.symbolBlocks.push(symbolBlock)
+      } else if (/(OP\/cast)/.test(Ref_symbol_path)) {
+        const symbolBlock = new SymbolBlockInst({
+          id: uuid(),
+          name: 'Cast',
           instName: name,
           status: EnableStatusEnum.ON,
           pathId: `base${formatVersion(Ref_symbol_path)}`.toLowerCase(),

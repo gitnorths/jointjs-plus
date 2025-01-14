@@ -1,7 +1,7 @@
 import { Label } from './Label'
 
 export class LabelOut extends Label {
-  pathId = 'base/extend/labelout/1.0'
+  pathId = 'base/extend/labelout/v1r0p0'
   type!: 'RegOutput' | 'RegDebugOutput' | 'PageOutput' | 'BoardOutput'
 
   constructor (props?: any) {
