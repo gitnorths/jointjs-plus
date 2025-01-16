@@ -14,27 +14,24 @@ import { LabelIn, LabelOut, PageAnnotation } from '@/model/dto'
 import { objDiff } from '@/renderer/common/util'
 import { getObjContext, instanceVFB } from '@/renderer/pages/nextStudio/action'
 import SymbolDialog from './symbolDialog/symbolDialog.vue'
-import { dia, shapes } from '@joint/plus'
+import { dia, shapes, ui } from '@joint/plus'
 
 export default {
   name: 'graphEditor',
   components: { SymbolDialog },
   props: {
-    tagKey: {
-      type: String,
-      required: true
-    }
+    tagKey: { type: String, required: true }
   },
   data () {
     return {
-      requestTimeout: 100,
-      loadingService: null,
-      container: null,
-      graph: null,
-      paper: null,
-      historyStack: null,
-      orgPageGraph: null,
-      recordSet: { insertRecords: [], updateRecords: [], removeRecords: [] }
+      loadingService: null, // 加载
+      orgPageGraph: null, // 原始page对象
+      recordSet: { insertRecords: [], updateRecords: [], removeRecords: [] }, // 修改记录
+      graph: null, // joint graph对象
+      paper: null, // joint 画布对象
+      snaplines: null, // joint 辅助线
+      paperScroller: null, // joint 滚动对象
+      commandManager: null // joint undo redo管理器
     }
   },
   computed: {
@@ -48,55 +45,64 @@ export default {
       return R.equals(this.tagKey, this.$store.getters.activeKey)
     },
     focusedVfbId () {
-      return this.$store.getters.focusedVfbId
+      return this.$store.getters.focusedVfbId // FIXME 统一修改为searchPath来查找定位
     },
     symbolProtoMap () {
-      return this.$store.getters.symbolProtoMap
+      return this.$store.getters.symbolProtoMap // 符号原型，用于构造新的业务对象
     },
     symbolNameSpace () {
       return this.$store.getters.symbolNameSpace
+    },
+    nameSpace () {
+      return { ...shapes, ...this.$store.getters.symbolNameSpace }
     }
   },
   watch: {
+    activeStatus (val) {
+      if (val) {
+        this.$store.commit('setCurrentPaper', this.paperScroller)
+      }
+    },
     focusedVfbId (val) {
       if (val) {
         this.focus(val)
       }
+    },
+    symbolNameSpace () {
+      // TODO
+      console.log(this.graph, this.paper)
     }
   },
   methods: {
-    startLoading () {
-      if (!this.loadingService) {
-        this.loadingService = this.$loading({
-          target: `#${this.tagKey}`,
-          fullscreen: false,
-          text: '加载中...',
-          spinner: 'el-icon-loading',
-          background: 'rgba(0, 0, 0, 0.3)'
-        })
-      }
-    },
-    closeLoading () {
-      if (this.loadingService) {
-        this.loadingService.close()
-        this.loadingService = null
-      }
+    loading (fn) {
+      this.loadingService = this.$loading({
+        target: `#${this.tagKey}`,
+        fullscreen: false,
+        text: '加载中...',
+        spinner: 'el-icon-loading',
+        background: 'rgba(0, 0, 0, 0.3)'
+      })
+      return setTimeout(fn, 100)
     },
     addVfbToGraph (block) {
       const typeArr = block.pathId.split('/')
-      const ctr = R.path(typeArr, this.symbolNameSpace)
+      const ctr = R.path(typeArr, this.nameSpace)
       const symbolBlock = new ctr()
+      symbolBlock.set('data', block)
       symbolBlock.set('id', block.id)
       symbolBlock.position(block.x, block.y)
       symbolBlock.addTo(this.graph)
+      // TODO 修改Text
     },
     addLabelToGraph (label) {
       const typeArr = label.pathId.split('/')
-      const ctr = R.path(typeArr, this.symbolNameSpace)
+      const ctr = R.path(typeArr, this.nameSpace)
       const symbolBlock = new ctr()
+      symbolBlock.set('data', label)
       symbolBlock.set('id', label.id)
       symbolBlock.position(label.x, label.y)
       symbolBlock.addTo(this.graph)
+      // TODO 修改Text
     },
     addAnnotationToGraph (annotation) {
       // TODO
@@ -111,7 +117,9 @@ export default {
           x: routePoint.x, y: routePoint.y
         })))
       }
+      link.set('data', line)
       link.addTo(this.graph)
+      // TODO 样式
     },
     addCellToGraph ({ symbolBlocks, connectLines, annotations, inLabels, outLabels }) {
       if (symbolBlocks && symbolBlocks.length > 0) {
@@ -141,8 +149,7 @@ export default {
       }
     },
     initPageGraphDto () {
-      this.startLoading()
-      setTimeout(() => {
+      this.loading(() => {
         getObjContext(this.pageGraphDto, this.deviceDbName).then((page) => {
           if (page) {
             this.orgPageGraph = {}
@@ -152,37 +159,40 @@ export default {
             this.orgPageGraph.inLabels = _.cloneDeep(page.inLabels)
             this.orgPageGraph.outLabels = _.cloneDeep(page.outLabels)
 
-            this.addCellToGraph(page)
-
+            // 清理
+            this.graph.clear() // 先清理原来的图形和连线
+            // this.commandManager.reset()
             this.recordSet = { insertRecords: [], updateRecords: [], removeRecords: [] }
             this.recordDelta()
-            // FIXME
-            // this.historyStack.clear()
-            this.focus(this.focusedVfbId)
+
+            this.addCellToGraph(page)
+
+            this.paperScroller.centerContent() // 居中显示
+            this.focus(this.focusedVfbId) // 高亮选中的符号
           }
         }).catch((e) => {
           this.$notification.openErrorNotification(`页面刷新失败${e}，请稍后再试。`).logger()
         }).finally(() => {
-          this.closeLoading()
+          this.loadingService.close()
+          this.loadingService = null
         })
-      }, this.requestTimeout)
+      })
     },
     judgeChanged () {
-      // fixme
       this.recordSet = { insertRecords: [], updateRecords: [], removeRecords: [] }
       const oldValue = this.orgPageGraph
       const newValue = { symbolBlocks: [], connectLines: [], annotations: [] }
       // FIXME
-      const allCells = []
+      const allCells = this.graph.getElements()
       for (const cell of allCells) {
-        if (cell && cell.value) {
+        if (cell && cell.data) {
           // FIXME
-          if (/VisualFuncBlock/.test(cell.value.clazzName)) {
-            newValue.symbolBlocks.push(cell.value)
-          } else if (/ConnectingLine/.test(cell.value.clazzName)) {
-            newValue.connectLines.push(cell.value)
-          } else if (/Annotation/.test(cell.value.clazzName)) {
-            newValue.annotations.push(cell.value)
+          if (/VisualFuncBlock/.test(cell.data.clazzName)) {
+            newValue.symbolBlocks.push(cell.data)
+          } else if (/ConnectingLine/.test(cell.data.clazzName)) {
+            newValue.connectLines.push(cell.data)
+          } else if (/Annotation/.test(cell.data.clazzName)) {
+            newValue.annotations.push(cell.data)
           }
         }
       }
@@ -405,7 +415,7 @@ export default {
       if (!this.activeStatus) {
         return
       }
-      const actionRecord = this.historyStack.undo()
+      const actionRecord = this.commandManager.undo()
       if (actionRecord && !actionRecord.isMxUndoManaged) {
         this.judgeChanged()
       }
@@ -414,7 +424,7 @@ export default {
       if (!this.activeStatus) {
         return
       }
-      const actionRecord = this.historyStack.redo()
+      const actionRecord = this.commandManager.redo()
       if (actionRecord && !actionRecord.isMxUndoManaged) {
         this.judgeChanged()
       }
@@ -452,8 +462,7 @@ export default {
       if (ignoreTagKeys && R.includes(this.tagKey, ignoreTagKeys)) {
         return
       }
-      this.startLoading()
-      setTimeout(() => {
+      this.loading(() => {
         if (!this.pageGraphDto) {
           // 页面被板卡界面关闭
           return
@@ -502,9 +511,10 @@ export default {
             })
           })
           .finally(() => {
-            this.closeLoading()
+            this.loadingService.close()
+            this.loadingService = null
           })
-      }, this.requestTimeout)
+      })
     },
     reset (ignoreTagKeys) {
       if (ignoreTagKeys && !R.includes(this.tagKey, ignoreTagKeys)) {
@@ -529,21 +539,51 @@ export default {
     }
   },
   mounted () {
-    this.container = this.$refs.graphEditorContainer
-    this.graph = new dia.Graph({}, { cellNamespace: this.symbolNameSpace })
+    // 初始化jonit
+    this.graph = new dia.Graph({}, { cellNamespace: this.nameSpace })
+
+    this.commandManager = new dia.CommandManager({ graph: this.graph })
+
     this.paper = new dia.Paper({
-      el: this.container,
       model: this.graph,
-      width: '100%',
-      height: '100%',
-      background: { color: '#F5F5F5' },
-      cellViewNamespace: this.symbolNameSpace,
+      width: 800, // FIXME 应该是纸张尺寸，具体调试看下
+      height: 600,
+      background: { color: '#FAFAFA' },
+      cellViewNamespace: this.nameSpace,
       gridSize: 10,
       drawGrid: true,
-      defaultLink: new shapes.standard.Link()
+      defaultLink: shapes.standard.Link, // TODO 自定义连线样式
+      interactive: { addLinkFromMagnet: true }
+      // defaultRouter: { name: 'orthogonal' }
+      // TODO 其它配置
+    })
+
+    // this.snaplines = new ui.Snaplines({ paper: this.paper })
+
+    this.paperScroller = new ui.PaperScroller({
+      paper: this.paper,
+      autoResizePaper: true,
+      scrollWhileDragging: true,
+      cursor: 'grab'
+    })
+    this.$refs.graphEditorContainer.appendChild(this.paperScroller.render().el)
+
+    this.paper.on('blank:pointerdown', this.paperScroller.startPanning)
+    this.paper.on('paper:pan', (evt, tx, ty) => {
+      evt.preventDefault()
+      this.paperScroller.el.scrollLeft += tx
+      this.paperScroller.el.scrollTop += ty
+    })
+
+    this.paper.on('paper:pinch', (evt, ox, oy, scale) => {
+      // the default is already prevented
+      const zoom = this.paperScroller.zoom()
+      this.paperScroller.zoom(zoom * scale, { min: 0.2, max: 5, ox, oy, absolute: true })
     })
 
     this.initPageGraphDto()
+
+    this.$store.commit('setCurrentPaper', this.paperScroller)
 
     this.$vbus.$on('REFRESH_WORK_AREA', this.refreshDesc)
     this.$vbus.$on('RELOAD_WORK_AREA', this.reset)
@@ -566,6 +606,7 @@ export default {
 .graphEditorViewContainer {
   position: relative;
   height: 100%;
+  background-color: #f5f5f5;
 }
 </style>
 <style lang="scss">
@@ -573,8 +614,6 @@ export default {
   position: relative;
   height: 100%;
   width: 100%;
-  overflow-x: auto;
-  overflow-y: auto;
-  outline: none;
+  overflow: hidden;
 }
 </style>

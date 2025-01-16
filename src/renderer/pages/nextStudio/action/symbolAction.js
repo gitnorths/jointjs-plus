@@ -44,11 +44,11 @@ const addArchiveToStencilRegistry = (archiveList) => {
 const ConstraintDotSize = { w: 2, h: 2 }
 
 export const GraphSizeMap = {
-  'base/extend/labelin/v1r0p0': { w: 95, h: 10 },
-  'base/extend/labelout/v1r0p0': { w: 95, h: 10 },
-  'base/extend/cconstblock/v1r0p0': { w: 95, h: 10 },
-  'base/extend/cbrokencircleblock/v1r0p0': { w: 10, h: 10 },
-  'base/op/cast/v1r0p0': { w: 10, h: 10 }
+  'base/extend/labelin/v1r0p0': { w: 140, h: 20 },
+  'base/extend/labelout/v1r0p0': { w: 140, h: 20 },
+  'base/extend/cconstblock/v1r0p0': { w: 140, h: 20 },
+  'base/extend/cbrokencircleblock/v1r0p0': { w: 20, h: 20 },
+  'base/op/cast/v1r0p0': { w: 20, h: 20 }
 }
 
 function getLabelInGraph () {

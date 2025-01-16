@@ -3,49 +3,7 @@
     <img :src="flushIcon" alt="flush" class="variableListFlushIcon" ref="variableListFlushIcon" @click="refresh">
     <el-tabs type="border-card" v-model="activeTab">
       <el-tab-pane v-loading="loading" label="功能块库" name="archiveProto">
-        <el-input
-          prefix-icon="el-icon-search"
-          clearable v-model="archiveTreeSearch"
-          @change="(value)=>inputHandler(value)"
-          size="small"
-          placeholder="输入关键字进行过滤"/>
-        <div class="treeContainer">
-          <el-tree
-            node-key="pathId"
-            :indent=8
-            :props="{label: 'title'}"
-            :data="archiveProtoTreeData"
-            :filter-node-method="filterNode"
-            :expand-on-click-node=false
-            @node-expand="nodeExpandHandler"
-            @node-collapse="nodeCollapseHandler"
-            ref="tree">
-            <template v-slot="{ node, data }">
-              <el-popover
-                style="width: 100%; height: 100%"
-                placement="left"
-                trigger="hover"
-                :disabled="!(data instanceof ProtoSymbolBlock)"
-                :title="data.name"
-                :open-delay="500"
-                :close-delay="0">
-                <tip-graph :symbol="data"/>
-                <template v-slot:reference>
-                  <div :class="className(data)" :id="data.pathId"
-                       style="display: inline-block; width: 100%; height: 100%"
-                       @dblclick="dblClkHandler(node, data)">
-                    <div class="title" :style="{width: data.desc ? '50%' : '100%'}">
-                      <i :class="iconClass(data)"/> {{ node.label }}
-                    </div>
-                    <div v-if="data.desc" class="title"
-                         style="width:calc(50% - 15px); text-align: right; margin-right: 15px">
-                      {{ data.desc }}
-                    </div>
-                  </div>
-                </template>
-              </el-popover>
-            </template>
-          </el-tree>
+        <div class="treeContainer" ref="stencilContainer">
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -55,35 +13,37 @@
 <script>
 import * as R from 'ramda'
 import { getDeviceSymbol } from '@/renderer/pages/nextStudio/action'
-import TipGraph from './tipGraph.vue'
-import { ProtoSymbolBlock } from '@/model/dto'
-import { getDtoClassName, getIconClass } from '@/renderer/common/util'
+import { ui } from '@joint/plus'
+import { formatPathIdType } from '@/util'
 
 export default {
   name: 'symbolProtoList',
-  components: { TipGraph },
-  props: {},
+  data () {
+    return {
+      flushIcon: './icon/flush.png',
+      activeTab: 'archiveProto',
+      stencil: null
+    }
+  },
   computed: {
-    ProtoSymbolBlock () {
-      return ProtoSymbolBlock
-    },
     loading () {
       return this.$store.getters.symbolProtoLoading
     },
     archiveProtoList () {
       return this.$store.getters.archiveProtoList
     },
-    symbolProtoMap () {
-      return this.$store.getters.symbolProtoMap
+    currentPaper () {
+      return this.$store.getters.currentPaper
+    },
+    symbolNameSpace () {
+      return this.$store.getters.symbolNameSpace
     }
   },
-  data () {
-    return {
-      flushIcon: './icon/flush.png',
-      activeTab: 'archiveProto',
-      archiveTreeSearch: '',
-      archiveProtoTreeData: [],
-      expandedKeys: []
+  watch: {
+    currentPaper (val) {
+      if (val) {
+        this.bindPaper(val)
+      }
     }
   },
   methods: {
@@ -100,92 +60,71 @@ export default {
       }, 1000)
       getDeviceSymbol()
     },
-    className (data) {
-      return getDtoClassName(data)
-    },
-    iconClass (data) {
-      return getIconClass(data)
+    bindPaper (val) {
+      if (this.stencil) {
+        this.stencil.setPaper(val)
+      } else {
+        this.init()
+      }
     },
     init () {
-      this.archiveProtoTreeData = this.archiveProtoList
-      this.$nextTick(() => {
-        if (R.isNotEmpty(this.expandedKeys)) {
-          for (const id of this.expandedKeys) {
-            const node = this.$refs.tree.getNode(id)
-            if (node) {
-              node.expand()
+      if (this.currentPaper) {
+        const options = {
+          paper: this.currentPaper,
+          groupsToggleButtons: true,
+          groups: {},
+          height: null,
+          layout: {
+            columnWidth: '100%',
+            columns: 2,
+            rowHeight: 80,
+            rowGap: 10,
+            columnGap: 10,
+            marginX: 10,
+            marginY: 10,
+            resizeToFit: true
+          },
+          scaleClones: true,
+          search: {
+            '*': ['type', 'attrs/root/dataTooltip', 'attrs/label/text']
+          }
+        }
+
+        const stencils = {}
+        if (R.isNotEmpty(this.archiveProtoList)) {
+          let length = 0
+          for (let i = 0; i < this.archiveProtoList.length; i++) {
+            const archive = this.archiveProtoList[i]
+            if (R.isNotEmpty(archive.children)) {
+              for (let j = 0; j < archive.children.length; j++) {
+                const lib = archive.children[j]
+                const groupStr = `${archive.name}/${lib.name}`
+                options.groups[groupStr] = { label: groupStr, index: j + 1 + length }
+                const cells = []
+                if (R.isNotEmpty(lib.children)) {
+                  for (const protoSymbol of lib.children) {
+                    cells.push({ type: formatPathIdType(protoSymbol.pathId), size: { height: 54 } })
+                  }
+                }
+                stencils[groupStr] = cells
+              }
+              length += archive.children.length
             }
           }
         }
-        this.$refs.tree.filter(this.archiveTreeSearch)
-        this.makeSymbolDraggable()
-      })
-    },
-    filterNode (value, data) {
-      if (!value) {
-        return true
+        this.stencil = new ui.Stencil(options)
+        this.$refs.stencilContainer.appendChild(this.stencil.render().el)
+        Object.keys(stencils).forEach((key) => {
+          this.stencil.loadGroup(stencils[key], key)
+        })
       }
-      try {
-        const regex = new RegExp(value, 'gi')
-        return regex.test(data.title) || regex.test(data.desc)
-      } catch (e) {
-      }
-    },
-    inputHandler (value) {
-      this.$refs.tree.filter(value)
-      this.makeSymbolDraggable()
-    },
-    nodeExpandHandler (data) {
-      this.makeSymbolDraggable()
-      this.expandedKeys.push(data.pathId)
-    },
-    nodeCollapseHandler (data) {
-      const index = this.expandedKeys.indexOf(data.pathId)
-      if (index >= 0) {
-        this.expandedKeys.splice(index, 1)
-      }
-    },
-    dblClkHandler (node, data) {
-      if (data.children && data.children.length > 0) {
-        if (node.expanded) {
-          node.collapse()
-          this.nodeCollapseHandler(data)
-        } else {
-          node.expand()
-          this.nodeExpandHandler(data)
-        }
-      }
-    },
-    makeSymbolDraggable () {
-      const makeDraggable = (item) => {
-        const pathId = item.getAttribute('id')
-        if (R.isNil(pathId)) {
-          return
-        }
-        const symbol = this.symbolProtoMap[pathId]
-        if (R.isNil(symbol)) {
-          return
-        }
-
-        item.setAttribute('makeDraggable', true)
-      }
-      this.$nextTick(() => {
-        const symbolEles = this.$el.querySelectorAll('.VisualFuncBlock')
-        if (R.isNotNil(symbolEles) && symbolEles.length > 0) {
-          symbolEles.forEach((item) => {
-            if (!item.getAttribute('makeDraggable')) {
-              makeDraggable(item)
-            }
-          })
-        }
-      })
     }
   },
   mounted () {
-    this.$vbus.$on('REFRESH_ARCHIVE_PROTO', this.init)
+    this.$on('REFRESH_ARCHIVE_PROTO', this.init)
   },
   destroyed () {
-    this.$vbus.$off('REFRESH_ARCHIVE_PROTO', this.init)
+    this.$off('REFRESH_ARCHIVE_PROTO', this.init)
   }
 }
 </script>
@@ -208,12 +147,6 @@ export default {
     .treeContainer {
       height: calc(100% - 35px);
       overflow: auto;
-    }
-
-    .el-input__inner {
-      border-radius: 0;
-      height: 34px;
-      line-height: 34px;
     }
   }
 }

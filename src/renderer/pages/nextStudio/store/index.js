@@ -9,6 +9,7 @@ import vfbInstDialogStore from './vfbInstDialogStore'
 import DebugModeStore from './debugModeStore'
 import SearchStore from './searchStore'
 import VfbUpdateStore from './vfbUpdateStore'
+import PaperStore from './paperStore'
 
 Vue.use(Vuex)
 export default new Vuex.Store({
@@ -20,6 +21,7 @@ export default new Vuex.Store({
     vfbInstDialogStore,
     DebugModeStore,
     SearchStore,
-    VfbUpdateStore
+    VfbUpdateStore,
+    PaperStore
   }
 })
