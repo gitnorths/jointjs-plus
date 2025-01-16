@@ -15,8 +15,8 @@ import { getSymbolTypeEnum, getVariableTypeEnum, SymbolTypeEnum, TaskLevelEnum }
 import path from 'path'
 import * as R from 'ramda'
 import _ from 'lodash'
-import { loadSymbolGraphJoint } from './jointjsConvertor'
 import { formatVersion } from '@/util'
+import { generateJointSymbolGraph } from './jointjsShapeGenerator'
 
 export class SymbolLibLoader {
   public loadSymbolArchive (request: { name: string, organization: string, llsymPath: string }) {
@@ -205,8 +205,10 @@ export class SymbolLibLoader {
     jsonObj.headFile = undefined
     jsonObj.srcFile = undefined
     jsonObj.libFile = undefined
-    jsonObj.children = []
     jsonObj.parent = undefined
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    delete jsonObj.children
 
     version.modelFile = JSON.stringify(jsonObj, null, 0)
   }
@@ -309,10 +311,12 @@ export class SymbolLibLoader {
             }
           } else if (ele.name === 'GRAPH') {
             // loadSymbolGraphStencil(ele, version) // mxgraph format loader
-            loadSymbolGraphJoint(ele, version) // jointjs format loader
+            // loadSymbolGraphJoint(ele, version) // jointjs format loader
           }
         }
       }
     }
+    // 改为重新生成图形
+    generateJointSymbolGraph(version)
   }
 }

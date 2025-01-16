@@ -552,8 +552,8 @@ export default {
       cellViewNamespace: this.nameSpace,
       gridSize: 10,
       drawGrid: true,
-      defaultLink: shapes.standard.Link, // TODO 自定义连线样式
-      interactive: { addLinkFromMagnet: true }
+      defaultLink: new shapes.standard.Link(), // TODO 自定义连线样式
+      interactive: { addLinkFromMagnet: true, linkMove: true }
       // defaultRouter: { name: 'orthogonal' }
       // TODO 其它配置
     })
