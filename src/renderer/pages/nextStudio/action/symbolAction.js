@@ -106,13 +106,6 @@ function getLabelInGraph () {
           label: {
             fontSize: Benchmark.fontSize,
             text: ''
-          },
-          portBody: {
-            cx: 0,
-            cy: 0,
-            r: Benchmark.portRadius,
-            fill: Benchmark.fill,
-            stroke: Benchmark.stroke
           }
         },
         args: {
@@ -183,13 +176,6 @@ function getLabelOutGraph () {
             label: {
               fontSize: Benchmark.fontSize,
               text: ''
-            },
-            portBody: {
-              cx: 0,
-              cy: 0,
-              r: Benchmark.portRadius,
-              fill: Benchmark.fill,
-              stroke: Benchmark.stroke
             }
           },
           args: {
@@ -259,14 +245,6 @@ function getConstGraph () {
             label: {
               fontSize: Benchmark.fontSize,
               text: ''
-            },
-            portBody: {
-              magnet: true,
-              cx: 0,
-              cy: 0,
-              r: Benchmark.portRadius,
-              fill: Benchmark.fill,
-              stroke: Benchmark.stroke
             }
           },
           args: {
@@ -322,14 +300,6 @@ function getBreakCircleGraph () {
             label: {
               fontSize: Benchmark.fontSize,
               text: ''
-            },
-            portBody: {
-              magnet: true,
-              cx: 0,
-              cy: 0,
-              r: Benchmark.portRadius,
-              fill: Benchmark.fill,
-              stroke: Benchmark.stroke
             }
           },
           args: {
@@ -344,14 +314,6 @@ function getBreakCircleGraph () {
             label: {
               fontSize: Benchmark.fontSize,
               text: ''
-            },
-            portBody: {
-              magnet: true,
-              cx: 0,
-              cy: 0,
-              r: Benchmark.portRadius,
-              fill: Benchmark.fill,
-              stroke: Benchmark.stroke
             }
           },
           args: {
@@ -408,14 +370,6 @@ function getCastGraph () {
             label: {
               fontSize: Benchmark.fontSize,
               text: ''
-            },
-            portBody: {
-              magnet: true,
-              cx: 0,
-              cy: 0,
-              r: Benchmark.portRadius,
-              fill: Benchmark.fill,
-              stroke: Benchmark.stroke
             }
           },
           args: {
@@ -430,14 +384,6 @@ function getCastGraph () {
             label: {
               fontSize: Benchmark.fontSize,
               text: ''
-            },
-            portBody: {
-              magnet: true,
-              cx: 0,
-              cy: 0,
-              r: Benchmark.portRadius,
-              fill: Benchmark.fill,
-              stroke: Benchmark.stroke
             }
           },
           args: {

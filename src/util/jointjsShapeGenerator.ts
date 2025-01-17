@@ -30,7 +30,19 @@ export function syncHeight (version: SymbolBlockVersion) {
 
 export const inputPortGroup: dia.Element.PortGroup = {
   position: { name: PortLayoutsName.Absolute },
-  markup: [{ tagName: SvgTagName.Circle, selector: 'portBody' }],
+  markup: [
+    {
+      tagName: SvgTagName.Circle,
+      selector: 'portBody',
+      attributes: {
+        r: Benchmark.portRadius,
+        cx: 0,
+        cy: 0,
+        fill: Benchmark.fill,
+        stroke: Benchmark.stroke
+      }
+    }
+  ],
   attrs: {
     portBody: { magnet: true }
   },
@@ -42,7 +54,19 @@ export const inputPortGroup: dia.Element.PortGroup = {
 
 export const outputPortGroup: dia.Element.PortGroup = {
   position: { name: PortLayoutsName.Absolute },
-  markup: [{ tagName: SvgTagName.Circle, selector: 'portBody' }],
+  markup: [
+    {
+      tagName: SvgTagName.Circle,
+      selector: 'portBody',
+      attributes: {
+        r: Benchmark.portRadius,
+        cx: 0,
+        cy: 0,
+        fill: Benchmark.fill,
+        stroke: Benchmark.stroke
+      }
+    }
+  ],
   attrs: {
     portBody: { magnet: true }
   },
@@ -119,13 +143,6 @@ export function generateJointSymbolGraph (version: SymbolBlockVersion) {
           id: input.name,
           group: 'input',
           attrs: {
-            portBody: {
-              cx: 0,
-              cy: 0,
-              r: Benchmark.portRadius,
-              fill: Benchmark.fill,
-              stroke: Benchmark.stroke
-            },
             label: {
               fill: Benchmark.fontColor,
               fontSize: `${Benchmark.fontSize}px`,
@@ -148,13 +165,6 @@ export function generateJointSymbolGraph (version: SymbolBlockVersion) {
           id: output.name,
           group: 'output',
           attrs: {
-            portBody: {
-              cx: 0,
-              cy: 0,
-              r: Benchmark.portRadius,
-              fill: Benchmark.fill,
-              stroke: Benchmark.stroke
-            },
             label: {
               fill: Benchmark.fontColor,
               fontSize: `${Benchmark.fontSize}px`,

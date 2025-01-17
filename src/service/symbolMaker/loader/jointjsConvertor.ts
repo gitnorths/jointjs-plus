@@ -3,6 +3,7 @@ import { ElementCompact } from 'xml-js'
 import { SymbolBlockVersion } from '@/model/dto'
 import { dia } from '@joint/plus'
 import { formatPathIdType } from '@/util'
+import { inputPortGroup, outputPortGroup } from '@/util/jointjsShapeGenerator'
 
 export function getShapeSize (ele: ElementCompact) {
   const xArr = []
@@ -51,30 +52,6 @@ export function loadSymbolGraphJoint (ele: ElementCompact, version: SymbolBlockV
 
   const markupJson: dia.MarkupNodeJSON[] = []
 
-  const inputGroup: dia.Element.PortGroup = {
-    position: { name: 'absolute' },
-    markup: [{ tagName: 'circle', selector: 'portBody' }],
-    attrs: {
-      portBody: { magnet: true }
-    },
-    label: {
-      markup: [{ tagName: 'text', selector: 'label' }],
-      position: { name: 'right', args: { x: 6 } }
-    }
-  }
-
-  const outputGroup: dia.Element.PortGroup = {
-    position: { name: 'absolute' },
-    markup: [{ tagName: 'circle', selector: 'portBody' }],
-    attrs: {
-      portBody: { magnet: true }
-    },
-    label: {
-      markup: [{ tagName: 'text', selector: 'label' }],
-      position: { name: 'left', args: { x: -6 } }
-    }
-  }
-
   const jointGraphJson: dia.Element.GenericAttributes<dia.Cell.Selectors> = {
     type: formatPathIdType(version.pathId),
     markup: '',
@@ -82,8 +59,8 @@ export function loadSymbolGraphJoint (ele: ElementCompact, version: SymbolBlockV
     attr: {},
     ports: {
       groups: {
-        input: inputGroup,
-        output: outputGroup
+        input: inputPortGroup,
+        output: outputPortGroup
       },
       items: []
     }

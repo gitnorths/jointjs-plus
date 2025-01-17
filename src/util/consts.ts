@@ -15,7 +15,7 @@ export const Benchmark = {
   fontSize: 12,
   fontColor: '#000000', // #0000ff
   lineHeight: 2,
-  portRadius: 2,
+  portRadius: 5,
   fill: '#ffffff', // #fefe8d
   stroke: '#000000',
   strokeWidth: 2
