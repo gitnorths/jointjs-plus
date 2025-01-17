@@ -1,54 +1,55 @@
 import * as R from 'ramda'
 import { dia } from '@joint/plus'
 import { SymbolBlockVarInput, SymbolBlockVarOutput, SymbolBlockVersion } from '@/model/dto'
-import { formatPathIdType } from '@/util'
 import { PortLabelLayoutsName, PortLayoutsName, SvgTagName } from './jointjsConsts'
-
-const Benchmark = {
-  gridSize: 10,
-  fontSize: 12,
-  fontColor: '#000000', // #0000ff
-  lineHeight: 2,
-  portRadius: 2,
-  fill: '#ffffff', // #fefe8d
-  stroke: '#000000',
-  strokeWidth: 2
-}
-
-function computedTextWidth (text: string) {
-  const span = document.createElement('span')
-  span.innerHTML = text
-  span.style.visibility = 'hidden'
-  span.style.fontSize = `${Benchmark.fontSize}px`
-  span.setAttribute('class', 'fontSize')
-  const body = document.body
-  body.appendChild(span)
-  const width = span.offsetWidth
-  body.removeChild(span)
-  return width
-}
+import { computedTextWidth, formatPathIdType } from '@/util/index'
+import { Benchmark } from '@/util/consts'
 
 function getMaxStrLength (ioArray: Array<SymbolBlockVarInput | SymbolBlockVarOutput>) {
   let maxLength = 0
   for (const io of ioArray) {
-    const length = computedTextWidth(io.name) + Benchmark.fontSize / 2
+    const length = computedTextWidth(io.name, Benchmark.fontSize) + Benchmark.fontSize / 2
     maxLength = Math.max(maxLength, length)
   }
   return maxLength
 }
 
-function syncWidth (version: SymbolBlockVersion) {
+export function syncWidth (version: SymbolBlockVersion) {
   // name的长度对gridSize向上取整，两边让出两倍grid的空格
-  const nameLength = Math.ceil(computedTextWidth(version.name) / Benchmark.gridSize) + 2
+  const nameLength = Math.ceil(computedTextWidth(version.name, Benchmark.fontSize) / Benchmark.gridSize) + 2
   // 输出最长长度 + 输入最长长度对gridSize向上取整，中间空出两倍grid的空格
   const ioContentLength = Math.ceil((getMaxStrLength(version.inputs) + getMaxStrLength(version.outputs)) / Benchmark.gridSize) + 2
 
   return Math.max(ioContentLength, nameLength) * Benchmark.gridSize
 }
 
-function syncHeight (version: SymbolBlockVersion) {
+export function syncHeight (version: SymbolBlockVersion) {
   const maxLen = Math.max(version.inputs.length, version.outputs.length)
   return (Math.max(maxLen, 1) + 2) * Benchmark.lineHeight * Benchmark.gridSize
+}
+
+export const inputPortGroup: dia.Element.PortGroup = {
+  position: { name: PortLayoutsName.Absolute },
+  markup: [{ tagName: SvgTagName.Circle, selector: 'portBody' }],
+  attrs: {
+    portBody: { magnet: true }
+  },
+  label: {
+    markup: [{ tagName: SvgTagName.Text, selector: 'label' }],
+    position: { name: PortLabelLayoutsName.Right, args: { x: Benchmark.fontSize / 2 } }
+  }
+}
+
+export const outputPortGroup: dia.Element.PortGroup = {
+  position: { name: PortLayoutsName.Absolute },
+  markup: [{ tagName: SvgTagName.Circle, selector: 'portBody' }],
+  attrs: {
+    portBody: { magnet: true }
+  },
+  label: {
+    markup: [{ tagName: SvgTagName.Text, selector: 'label' }],
+    position: { name: PortLabelLayoutsName.Left, args: { x: -(Benchmark.fontSize / 2) } }
+  }
 }
 
 export function generateJointSymbolGraph (version: SymbolBlockVersion) {
@@ -81,11 +82,11 @@ export function generateJointSymbolGraph (version: SymbolBlockVersion) {
         tagName: SvgTagName.Text,
         selector: 'label',
         attributes: {
-          x: (width - computedTextWidth(version.name)) / 2,
+          x: (width - computedTextWidth(version.name, Benchmark.fontSize)) / 2,
           y: Benchmark.gridSize,
           fill: Benchmark.fontColor,
           fontSize: `${Benchmark.fontSize}px`,
-          dominantBaseline: 'middle'
+          dominantBaseline: 'central'
         },
         textContent: version.name
       }
@@ -102,28 +103,8 @@ export function generateJointSymbolGraph (version: SymbolBlockVersion) {
     },
     ports: {
       groups: {
-        input: {
-          position: { name: PortLayoutsName.Absolute },
-          markup: [{ tagName: SvgTagName.Circle, selector: 'portBody' }],
-          attrs: {
-            portBody: { magnet: true }
-          },
-          label: {
-            markup: [{ tagName: SvgTagName.Text, selector: 'label' }],
-            position: { name: PortLabelLayoutsName.Right, args: { x: Benchmark.fontSize / 2 } }
-          }
-        },
-        output: {
-          position: { name: PortLayoutsName.Absolute },
-          markup: [{ tagName: SvgTagName.Circle, selector: 'portBody' }],
-          attrs: {
-            portBody: { magnet: true }
-          },
-          label: {
-            markup: [{ tagName: SvgTagName.Text, selector: 'label' }],
-            position: { name: PortLabelLayoutsName.Left, args: { x: -(Benchmark.fontSize / 2) } }
-          }
-        }
+        input: inputPortGroup,
+        output: outputPortGroup
       },
       items: []
     }
@@ -194,5 +175,5 @@ export function generateJointSymbolGraph (version: SymbolBlockVersion) {
   // 使用jointjs的toJSON方法
   const element = new dia.Element(jointGraphJson)
   element.set('id', version.pathId)
-  version.graphicFile = JSON.stringify(element.toJSON())
+  return JSON.stringify(element.toJSON())
 }

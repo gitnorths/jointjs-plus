@@ -16,7 +16,7 @@ import path from 'path'
 import * as R from 'ramda'
 import _ from 'lodash'
 import { formatVersion } from '@/util'
-import { generateJointSymbolGraph } from './jointjsShapeGenerator'
+import { generateJointSymbolGraph } from '@/util/jointjsShapeGenerator'
 
 export class SymbolLibLoader {
   public loadSymbolArchive (request: { name: string, organization: string, llsymPath: string }) {
@@ -317,6 +317,6 @@ export class SymbolLibLoader {
       }
     }
     // 改为重新生成图形
-    generateJointSymbolGraph(version)
+    version.graphicFile = generateJointSymbolGraph(version)
   }
 }

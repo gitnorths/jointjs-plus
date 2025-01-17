@@ -1,9 +1,50 @@
 import * as R from 'ramda'
 import { ElementCompact } from 'xml-js'
 import { SymbolBlockVersion } from '@/model/dto'
-import { getShapeSize } from './mxStencilConvertor'
 import { dia } from '@joint/plus'
 import { formatPathIdType } from '@/util'
+
+export function getShapeSize (ele: ElementCompact) {
+  const xArr = []
+  const yArr = []
+  if (R.isNotEmpty(ele.elements)) {
+    for (const symbolEle of ele.elements) {
+      const graphObj = symbolEle.attributes
+      const className = graphObj.class_name
+      if (className === 'CGLineObject') {
+        const graphEle = R.find((ele: ElementCompact) => ele.name === 'GRAPH')(symbolEle.elements)
+        if (graphEle && R.isNotEmpty(graphEle.elements)) {
+          for (const ele of graphEle.elements) {
+            if (/Line/.test(ele.name)) {
+              const lineObj = ele.attributes
+              xArr.push(Number(lineObj.x1))
+              xArr.push(Number(lineObj.x2))
+              yArr.push(Number(lineObj.y1))
+              yArr.push(Number(lineObj.y2))
+            }
+          }
+        }
+      } else if (className === 'CGRectangleObject') {
+        const graphEle = R.find((ele: ElementCompact) => ele.name === 'GRAPH')(symbolEle.elements)
+        if (graphEle && R.isNotEmpty(graphEle.elements)) {
+          for (const ele of graphEle.elements) {
+            if (/Rect/.test(ele.name)) {
+              const rectObj = ele.attributes
+              xArr.push(Number(rectObj.x))
+              xArr.push(Number(rectObj.x) + Number(rectObj.width))
+              yArr.push(Number(rectObj.y))
+              yArr.push(Number(rectObj.y) + Number(rectObj.height))
+            }
+          }
+        }
+      }
+    }
+  }
+  return {
+    w: (Math.max(...xArr) - Math.min(...xArr)),
+    h: (Math.max(...yArr) - Math.min(...yArr))
+  }
+}
 
 export function loadSymbolGraphJoint (ele: ElementCompact, version: SymbolBlockVersion) {
   const shapeSize = getShapeSize(ele)
@@ -144,7 +185,7 @@ function qtAlignmentToTextAttr (alignment: number | string, isRtl?: boolean) {
   } else if (alignment & 0x0040) {
     dominantBaseline = 'text-after-edge' // 'bottom'
   } else if (alignment & 0x0080) {
-    dominantBaseline = 'middle'
+    dominantBaseline = 'central'
   } else if (alignment & 0x0100) {
     dominantBaseline = 'baseline'
   }

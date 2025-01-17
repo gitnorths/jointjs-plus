@@ -34,9 +34,9 @@
 
 <script>
 import * as R from 'ramda'
-import { computedTextWidth, createNewShape, SHAPE_CONFIG } from '@/service/symbolMaker/stencilConverter'
 import _ from 'lodash'
 import { SymbolBlockConstants } from '@/renderer/pages/symbolMaker/views/components/workArea/workAreaConfig'
+import { generateJointSymbolGraph, syncHeight, syncWidth } from '@/util/jointjsShapeGenerator'
 
 export default {
   name: 'blockShape',
@@ -47,7 +47,6 @@ export default {
       container: null,
       graph: null,
       stencilName: '',
-      vertex: null,
       vertexValue: {
         name: '',
         width: 0,
@@ -93,7 +92,6 @@ export default {
       this.container = null
       this.graph = null
       this.stencilName = ''
-      this.vertex = null
       this.vertexValue = {
         name: '',
         width: 0,
@@ -105,18 +103,18 @@ export default {
     // 重置页面缩放
     resetScale () {
       this.scale = 2
-      this.graph.view.scaleAndTranslate(2, 0, 0)
-      this.graph.scrollCellToVisible(this.vertex, true)
+      // TODO
     },
     redrawGraph () {
       if (!this.redrawEnable) {
         return
       }
 
-      const stencil = createNewShape(this.vertexValue, this.stencilName) // 根据功能块模型定义新的图形
+      const stencil = generateJointSymbolGraph(this.block) // 根据功能块模型定义新的图形
 
+      // FIXME
       // 图像属性变化
-      const orgStencil = this.block.graph
+      const orgStencil = this.block.graphicFile
       if (stencil !== orgStencil || this.vertexValue.width !== this.block.width || this.vertexValue.height !== this.block.height) {
         this.$store.commit('updateSEDelta', {
           key: this.tagKey,
@@ -136,32 +134,11 @@ export default {
       }
     },
     syncHeight () {
-      // 自适应高度
-      const showInputs = R.filter(input => !input.integralVisible)(this.vertexValue.inputs)
-      const showOutputs = R.filter(output => !output.integralVisible)(this.vertexValue.outputs)
-      const maxLen = R.max(showInputs.length, showOutputs.length)
-      this.vertexValue.height = R.max(maxLen, 1) * SHAPE_CONFIG.lineHeight * SHAPE_CONFIG.gridSize + SHAPE_CONFIG.headSize
-
+      this.vertexValue.height = syncHeight(this.block)
       this.redrawGraph()
     },
     syncWidth () {
-      const sortMaxLengthIo = R.compose(
-        R.sort(R.descend(R.prop('length'))),
-        // IO文字坐标为距离边界有3个单位，乘以系数1.5
-        R.map((io) => ({
-          name: io.name,
-          length: computedTextWidth(io.name) + 3 * 1.5
-        })),
-        R.filter(io => !io.integralVisible && !io.textVisible)
-      )
-
-      const showInputs = sortMaxLengthIo(this.vertexValue.inputs)
-      const showOutputs = sortMaxLengthIo(this.vertexValue.outputs)
-      const maxInputName = showInputs.length > 0 ? showInputs[0] : { length: 0 }
-      const maxOutputName = showOutputs.length > 0 ? showOutputs[0] : { length: 0 }
-      // console.log(maxInputName, maxOutputName);
-      const maxLength = (Math.ceil((maxInputName.length + maxOutputName.length) / 5) + 2) * 5
-      // console.log(this.vertexValue.width, maxLength);
+      const maxLength = syncWidth(this.block)
       if (maxLength > this.vertexValue.width) {
         this.vertexValue.width = maxLength
         this.redrawGraph()
