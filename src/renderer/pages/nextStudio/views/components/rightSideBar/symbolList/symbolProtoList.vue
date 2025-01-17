@@ -69,28 +69,50 @@ export default {
     },
     init () {
       if (this.currentPaper) {
+        const paperOptions = { background: { color: '#F5F5F5' } }
         const options = {
           paper: this.currentPaper,
           groupsToggleButtons: true,
-          groups: {},
+          groups: {
+            'base/extend': { label: 'Base/Extend', index: 0, paperOptions }
+          },
+          width: '100%',
           height: null,
           layout: {
-            columnWidth: '100%',
             columns: 2,
-            rowHeight: 80,
+            columnWidth: 120,
+            rowHeight: 180,
             rowGap: 10,
-            columnGap: 10,
+            columnGap: 20,
             marginX: 10,
             marginY: 10,
             resizeToFit: true
           },
           scaleClones: true,
           search: {
-            '*': ['type', 'attrs/root/dataTooltip', 'attrs/label/text']
+            '*': ['type', 'attrs/label/text']
+          },
+          dragStartClone: (cell) => {
+            console.log(cell)
+            const ctr = R.path(cell.attributes.type.split('.'), this.symbolNameSpace)
+            return new ctr()
+          },
+          dragEndClone: (cell) => {
+            console.log(cell)
+            const ctr = R.path(cell.attributes.type.split('.'), this.symbolNameSpace)
+            return new ctr()
           }
         }
 
-        const stencils = {}
+        const stencils = {
+          'base/extend': [
+            { type: formatPathIdType('base/extend/labelin/v1r0p0') },
+            { type: formatPathIdType('base/extend/labelout/v1r0p0') },
+            { type: formatPathIdType('base/extend/cconstblock/v1r0p0') },
+            { type: formatPathIdType('base/extend/cbrokencircleblock/v1r0p0') },
+            { type: formatPathIdType('base/op/cast/v1r0p0') }
+          ]
+        }
         if (R.isNotEmpty(this.archiveProtoList)) {
           let length = 0
           for (let i = 0; i < this.archiveProtoList.length; i++) {
@@ -99,11 +121,11 @@ export default {
               for (let j = 0; j < archive.children.length; j++) {
                 const lib = archive.children[j]
                 const groupStr = `${archive.name}/${lib.name}`
-                options.groups[groupStr] = { label: groupStr, index: j + 1 + length }
+                options.groups[groupStr] = { label: groupStr, index: j + 1 + length, closed: true, paperOptions }
                 const cells = []
                 if (R.isNotEmpty(lib.children)) {
                   for (const protoSymbol of lib.children) {
-                    cells.push({ type: formatPathIdType(protoSymbol.pathId), size: { height: 54 } })
+                    cells.push({ type: formatPathIdType(protoSymbol.pathId) })
                   }
                 }
                 stencils[groupStr] = cells

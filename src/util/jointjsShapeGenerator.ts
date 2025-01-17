@@ -39,7 +39,8 @@ export const inputPortGroup: dia.Element.PortGroup = {
         cx: 0,
         cy: 0,
         fill: Benchmark.fill,
-        stroke: Benchmark.stroke
+        stroke: Benchmark.stroke,
+        strokeWidth: Benchmark.strokeWidth
       }
     }
   ],
@@ -63,7 +64,8 @@ export const outputPortGroup: dia.Element.PortGroup = {
         cx: 0,
         cy: 0,
         fill: Benchmark.fill,
-        stroke: Benchmark.stroke
+        stroke: Benchmark.stroke,
+        strokeWidth: Benchmark.strokeWidth
       }
     }
   ],
@@ -106,13 +108,10 @@ export function generateJointSymbolGraph (version: SymbolBlockVersion) {
         tagName: SvgTagName.Text,
         selector: 'label',
         attributes: {
-          x: (width - computedTextWidth(version.name, Benchmark.fontSize)) / 2,
-          y: Benchmark.gridSize,
           fill: Benchmark.fontColor,
           fontSize: `${Benchmark.fontSize}px`,
           dominantBaseline: 'central'
-        },
-        textContent: version.name
+        }
       }
     ],
     size: { width, height },
@@ -120,6 +119,11 @@ export function generateJointSymbolGraph (version: SymbolBlockVersion) {
       body: {
         width: 'calc(w)',
         height: 'calc(h)'
+      },
+      label: {
+        x: (width - computedTextWidth(version.name, Benchmark.fontSize)) / 2,
+        y: Benchmark.gridSize,
+        text: version.name
       },
       headLine: {
         d: `M 0 ${Benchmark.gridSize * Benchmark.lineHeight} L calc(w) ${Benchmark.gridSize * Benchmark.lineHeight}`

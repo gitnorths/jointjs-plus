@@ -97,19 +97,6 @@
         </el-button>
       </el-tooltip>
       <el-divider direction="vertical"/>
-      <!--自定义功能块区-->
-      <el-tooltip v-for="(item, index) in toolSymbolItems" :content="item.label" :key="`${index}draggable`"
-                  placement="bottom-start" :open-delay=500>
-        <el-button class="m_tool_btn" ref="draggableItem" :pathId="item.pathId">
-          <img :src="item.icon" :alt="item.label">
-        </el-button>
-      </el-tooltip>
-      <el-tooltip v-for="(item, index) in annotationItems" content="注解" :key="`annotation${index}`"
-                  placement="bottom-start" :open-delay=500>
-        <el-button class="m_tool_btn" ref="annotationItem" :colorStr="item.color">
-          <img :src="item.icon" alt="注解">
-        </el-button>
-      </el-tooltip>
     </div>
   </div>
 </template>
@@ -119,7 +106,6 @@ import * as R from 'ramda'
 import {
   enterDebugMode,
   generateConfigFile,
-  GraphSizeMap,
   newDeviceAction,
   openDeviceAction,
   openLineChart,
@@ -158,28 +144,6 @@ export default {
           icon: './icon/bottom_align.png',
           clickFunc: this.align('bottom')
         }
-      ],
-      toolSymbolItems: [
-        {
-          label: '输入',
-          icon: './icon/LIN.png',
-          pathId: 'base/extend/LabelIn/1.0'.toLowerCase()
-        },
-        {
-          label: '输出',
-          icon: './icon/LOUT.png',
-          pathId: 'base/extend/LabelOut/1.0'.toLowerCase()
-        },
-        {
-          label: '常量',
-          icon: './icon/CONST.png',
-          pathId: 'base/extend/CCONSTBlock/1.0'.toLowerCase()
-        }
-      ],
-      annotationItems: [
-        { color: 'fillColor=#dae8fc;strokeColor=#6c8ebf;', icon: './icon/annotation_DAE8FC.png' },
-        { color: 'fillColor=#f8cecc;strokeColor=#b85450;', icon: './icon/annotation_F8CECC.png' },
-        { color: 'fillColor=#fff2cc;strokeColor=#d6b656;', icon: './icon/annotation_FFF2CC.png' }
       ]
     }
   },
@@ -198,9 +162,6 @@ export default {
     },
     showGraphToolBar () {
       return this.deviceDto && !this.debugMode && this.activeDto && this.activeDto instanceof Page
-    },
-    graph () {
-      return R.find(R.propEq(this.activeKey, 'tagKey'))(this.graphs)
     },
     makeOptions () {
       const options = []
@@ -236,10 +197,7 @@ export default {
         if (R.isNotNil(result)) {
           const tmp = parseFloat(result) / 100
 
-          this.graph.view.scale = tmp
           this.scale = tmp
-          this.graph.refresh()
-          this.graph.center()
         }
       }
     },
@@ -251,14 +209,6 @@ export default {
     }
   },
   watch: {
-    showGraphToolBar (value) {
-      if (value) {
-        this.$nextTick(() => {
-          this.initDraggableBarItem()
-          this.initAnnotationDraggable()
-        })
-      }
-    },
     recordStatus (val) {
       if (!val) {
         if (this.recordTimer) {
@@ -282,36 +232,6 @@ export default {
       elt.style.width = `${width}px`
       elt.style.height = `${height}px`
       return elt
-    },
-    // 初始化菜单栏上的拖拽对象
-    initDraggableBarItem () {
-      let items = this.$refs.draggableItem
-
-      if (R.isNil(items)) {
-        return
-      }
-      if (!(items instanceof Array)) {
-        items = [items]
-      }
-      items.forEach((item) => {
-        const pathId = item.$el.getAttribute('pathId')
-        const size = GraphSizeMap[pathId]
-        // FIXME
-      })
-    },
-    initAnnotationDraggable () {
-      let items = this.$refs.annotationItem
-
-      if (R.isNil(items)) {
-        return
-      }
-      if (!(items instanceof Array)) {
-        items = [items]
-      }
-      items.forEach(item => {
-        item.$el.getAttribute('colorStr')
-        // fixme
-      })
     },
     toolBtnClickHandler (item) {
       if (item.clickFunc) {

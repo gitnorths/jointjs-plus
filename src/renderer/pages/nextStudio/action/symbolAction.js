@@ -75,15 +75,15 @@ function getLabelInGraph () {
           fill: Benchmark.fontColor,
           fontSize: `${Benchmark.fontSize}px`,
           dominantBaseline: 'central'
-        },
-        textContent: 'LabelIn'
+        }
       }
     ],
     size: { width: LabelGraphSize.w, height: LabelGraphSize.h },
     attrs: {
       label: {
         x: Benchmark.fontSize / 2,
-        y: 'calc(h/2)'
+        y: 'calc(h/2)',
+        text: 'LabelIn'
       },
       outLine: {
         d: 'M 0 calc(h) ' +
@@ -101,7 +101,6 @@ function getLabelInGraph () {
       items: [{
         id: 'LabelIn',
         group: 'output',
-        markup: [{ tagName: SvgTagName.Circle, selector: 'portBody' }],
         attrs: {
           label: {
             fontSize: Benchmark.fontSize,
@@ -145,15 +144,15 @@ function getLabelOutGraph () {
           fill: Benchmark.fontColor,
           fontSize: `${Benchmark.fontSize}px`,
           dominantBaseline: 'central'
-        },
-        textContent: 'LabelOut'
+        }
       }
     ],
     size: { width: LabelGraphSize.w, height: LabelGraphSize.h },
     attrs: {
       label: {
         x: 'calc(h/2)',
-        y: 'calc(h/2)'
+        y: 'calc(h/2)',
+        text: 'LabelOut'
       },
       outLine: {
         d: 'M calc(h/2) 0 ' +
@@ -218,8 +217,7 @@ function getConstGraph () {
           fill: Benchmark.fontColor,
           fontSize: `${Benchmark.fontSize}px`,
           dominantBaseline: 'central'
-        },
-        textContent: 'CConstBlock'
+        }
       }
     ],
     size: { width: graphSize.w, height: graphSize.h },
@@ -230,7 +228,8 @@ function getConstGraph () {
       },
       label: {
         x: Benchmark.fontSize / 2,
-        y: 'calc(h/2)'
+        y: 'calc(h/2)',
+        text: 'CConstBlock'
       }
     },
     ports: {
@@ -273,7 +272,6 @@ function getBreakCircleGraph () {
         tagName: SvgTagName.Circle,
         selector: 'body',
         attributes: {
-          r: graphSize.w / 2,
           strokeWidth: Benchmark.strokeWidth,
           stroke: Benchmark.stroke,
           fill: Benchmark.fill
@@ -283,6 +281,7 @@ function getBreakCircleGraph () {
     size: { width: graphSize.w, height: graphSize.h },
     attrs: {
       body: {
+        r: 'calc(w/2)',
         cx: 'calc(w/2)',
         cy: 'calc(h/2)'
       }

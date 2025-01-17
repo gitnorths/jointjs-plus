@@ -82,7 +82,7 @@ export default {
         spinner: 'el-icon-loading',
         background: 'rgba(0, 0, 0, 0.3)'
       })
-      return setTimeout(fn, 100)
+      return setTimeout(fn, 150)
     },
     addVfbToGraph (block) {
       const typeArr = block.pathId.split('/')
