@@ -15,6 +15,8 @@ import { objDiff } from '@/renderer/common/util'
 import { getObjContext, instanceVFB } from '@/renderer/pages/nextStudio/action'
 import SymbolDialog from './symbolDialog/symbolDialog.vue'
 import { dia, shapes, ui } from '@joint/plus'
+import { getVariableTypeString } from '@/model/enum'
+import { Benchmark } from '@/util/consts'
 
 export default {
   name: 'graphEditor',
@@ -82,7 +84,7 @@ export default {
         spinner: 'el-icon-loading',
         background: 'rgba(0, 0, 0, 0.3)'
       })
-      return setTimeout(fn, 150)
+      return setTimeout(fn, 120)
     },
     addVfbToGraph (block) {
       const typeArr = block.pathId.split('/')
@@ -91,18 +93,29 @@ export default {
       symbolBlock.set('data', block)
       symbolBlock.set('id', block.id)
       symbolBlock.position(block.x, block.y)
+      let textContent = block.instName || block.name
+      if (/^base\/extend\/CConstBlock/i.test(block.pathId)) {
+        const output = block.outputs[0]
+        const typeStr = getVariableTypeString(output.type)
+        textContent = output.abbr
+          ? `${output.abbr} ${typeStr} ${output.value}`
+          : `${typeStr} ${output.value}`
+      } else {
+        // FIXME 重算坐标有性能问题
+        symbolBlock.attr('label/x', Benchmark.fontSize / 2)
+      }
+      symbolBlock.attr('label/text', textContent)
       symbolBlock.addTo(this.graph)
-      // TODO 修改Text
     },
-    addLabelToGraph (label) {
-      const typeArr = label.pathId.split('/')
+    addLabelToGraph (block) {
+      const typeArr = block.pathId.split('/')
       const ctr = R.path(typeArr, this.nameSpace)
       const symbolBlock = new ctr()
-      symbolBlock.set('data', label)
-      symbolBlock.set('id', label.id)
-      symbolBlock.position(label.x, label.y)
+      symbolBlock.set('data', block)
+      symbolBlock.set('id', block.id)
+      symbolBlock.position(block.x, block.y)
+      symbolBlock.attr('label/text', block.name || block.desc || block.abbr || block.instName)
       symbolBlock.addTo(this.graph)
-      // TODO 修改Text
     },
     addAnnotationToGraph (annotation) {
       // TODO
@@ -552,6 +565,7 @@ export default {
       cellViewNamespace: this.nameSpace,
       gridSize: 10,
       drawGrid: true,
+      async: false,
       defaultLink: new shapes.standard.Link(), // TODO 自定义连线样式
       interactive: { addLinkFromMagnet: true, linkMove: true }
       // defaultRouter: { name: 'orthogonal' }

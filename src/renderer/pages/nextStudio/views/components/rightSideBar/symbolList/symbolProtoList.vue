@@ -74,7 +74,7 @@ export default {
           paper: this.currentPaper,
           groupsToggleButtons: true,
           groups: {
-            'base/extend': { label: 'Base/Extend', index: 0, paperOptions }
+            'base/extend': { label: 'Base/Extend', index: 0, closed: true, paperOptions }
           },
           width: '100%',
           height: null,
