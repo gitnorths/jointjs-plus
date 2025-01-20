@@ -3,8 +3,8 @@
     <img :src="flushIcon" alt="flush" class="variableListFlushIcon" ref="variableListFlushIcon" @click="refresh">
     <el-tabs type="border-card" v-model="activeTab">
       <el-tab-pane v-loading="loading" label="功能块库" name="archiveProto">
-        <div class="treeContainer" ref="stencilContainer">
-        </div>
+        <div class="stencil-container" ref="stencilContainer"></div>
+        <!-- <div class="stencil-container" ref="stencilContainer"></div> -->
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -12,19 +12,14 @@
 
 <script>
 import * as R from 'ramda'
-import { getDeviceSymbol } from '@/renderer/pages/nextStudio/action'
 import { ui } from '@joint/plus'
 import { formatPathIdType } from '@/util'
+import { getDeviceSymbol } from '@/renderer/pages/nextStudio/action'
 
 export default {
   name: 'symbolProtoList',
-  data () {
-    return {
-      flushIcon: './icon/flush.png',
-      activeTab: 'archiveProto',
-      stencil: null
-    }
-  },
+  components: {},
+  props: {},
   computed: {
     loading () {
       return this.$store.getters.symbolProtoLoading
@@ -43,6 +38,37 @@ export default {
     currentPaper (val) {
       if (val) {
         this.bindPaper(val)
+      }
+    }
+  },
+  data () {
+    return {
+      flushIcon: './icon/flush.png',
+      activeTab: 'archiveProto',
+      stencil: null,
+      stencilOptions: {
+        width: 200,
+        height: 300,
+        label: 'Stencil',
+        cellCursor: 'grab',
+        groupsToggleButtons: true,
+        search: {
+            '*': ['attrs/label/text'],
+            'standard.Image': ['description'],
+            'standard.Path': ['description']
+        },
+        layout: {
+          columns: 2, // 列数
+          columnWidth: 'compact', // 列宽度 auto compact number
+          columnGap: 10, // 列间隙
+          rowGap: 10, // 行间隙
+          rowHeight: 'compact', // 行高 auto compact number
+          verticalAlign: 'top', // 垂直对齐 top middle bottom
+          horizontalAlign: 'left', // 水平对齐 left middle right
+          marginX: 10, // 设置最左上角元素的原点（x坐标）
+          marginY: 10, // 设置最左上角元素的原点（y坐标）
+          resizeToFit: true // 调整元素大小以适合网格单元，同时保持纵横比
+        }
       }
     }
   },
@@ -80,12 +106,14 @@ export default {
           height: null,
           layout: {
             columns: 2,
-            columnWidth: 120,
-            rowHeight: 180,
+            columnWidth: 'compact',
+            rowHeight: 'compact',
             rowGap: 10,
             columnGap: 20,
             marginX: 10,
             marginY: 10,
+            verticalAlign: 'top',
+            horizontalAlign: 'left',
             resizeToFit: true
           },
           scaleClones: true,
@@ -140,13 +168,46 @@ export default {
           this.stencil.loadGroup(stencils[key], key)
         })
       }
+    },
+    initStencil () {
+      if (!this.currentPaper) return
+      let index = 0
+      const stencilObj = {}
+      this.archiveProtoList.forEach((item) => {
+        const children = item.children
+        if (children?.length) {
+          children.forEach((childItem) => {
+            const name = `${item.title}/${childItem.title}`
+            stencilObj[name] = { index, label: name, closed: true }
+            const stencilData = []
+            if (childItem.children?.length) {
+              for (const protoSymbol of childItem.children) {
+                stencilData.push({ type: formatPathIdType(protoSymbol.pathId) })
+              }
+            }
+            stencilObj[name] = stencilData
+            index++
+          })
+        }
+      })
+      this.stencilOptions.groups = stencilObj
+
+      const stencil = this.stencil = new ui.Stencil({
+          // graph: this.symbolGraph,
+          paper: this.currentPaper,
+          ...this.stencilOptions
+      })
+      this.$refs.stencilContainer.appendChild(stencil.render().el)
+      Object.keys(stencilObj).forEach(key => {
+        this.stencil.loadGroup(stencilObj[key], key)
+      })
     }
   },
   mounted () {
-    this.$on('REFRESH_ARCHIVE_PROTO', this.init)
+    this.$vbus.$on('REFRESH_ARCHIVE_PROTO', this.init)
   },
   destroyed () {
-    this.$off('REFRESH_ARCHIVE_PROTO', this.init)
+    this.$vbus.$off('REFRESH_ARCHIVE_PROTO', this.init)
   }
 }
 </script>
@@ -157,19 +218,5 @@ export default {
   height: 100%;
   user-select: none;
   position: relative;
-
-  .title {
-    display: inline-block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .el-tabs__content {
-    .treeContainer {
-      height: calc(100% - 35px);
-      overflow: auto;
-    }
-  }
 }
 </style>

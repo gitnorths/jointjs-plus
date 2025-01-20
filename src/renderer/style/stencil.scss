@@ -1,0 +1,244 @@
+:root {
+    --border-radius-small: 4px;
+    --border-radius-medium: 6px;
+    --border-radius-large: 12px;
+    --white: #ffffff;
+    --gray-1: #1f2937;
+    --gray-2: #374151;
+    --gray-3: #4b5563;
+    --gray-4: #6b7280;
+    --gray-5: #9ca3af;
+    --gray-6: #d1d5db;
+    --gray-7: #f3f4f6;
+    --black: #000000;
+    --jj-bg-header: var(--gray-2);
+    --jj-bg-tooltip: var(--gray-2);
+    --jj-bg-navigator-path-fill: #8da9d3;
+    --jj-bg-primary: var(--white);
+    --jj-bg-secondary: var(--gray-3);
+    --jj-bg-tertiary: var(--gray-6);
+    --jj-bg-quaternary: #edf1f8;
+    --jj-border-navigator: #4d6490;
+    --jj-border-selector: #137bdd;
+    --jj-border-primary: var(--gray-5);
+    --jj-border-secondary: var(--gray-6);
+    --jj-border-tertiary: #e0e6ea;
+    --jj-border-quaternary: var(--gray-2);
+    --jj-text-header: #e0e6ea;
+    --jj-text-context-toolbar: var(--gray-1);
+    --jj-text-primary: var(--gray-3);
+    --jj-text-secondary: var(--gray-4);
+    --jj-text-tertiary: var(--gray-5);
+    --jj-text-disabled: var(--gray-6);
+    --jj-accent-primary: #e2e9f4;
+    --jj-accent-secondary: #d9e2f2;
+    --jj-accent-tertiary: #d2dde5;
+    --jj-accent-hover: #edf1f8;
+}
+
+.stencil-container {
+    width: 100%;
+    height: 100%;
+    flex-shrink: 0;
+    z-index: 1;
+    background-color: var(--jj-bg-primary);
+    box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.1215686275);
+}
+
+.stencil-container .joint-stencil.joint-theme-default {
+    position: relative;
+    box-sizing: border-box;
+    height: 100%;
+    max-height: 1000px;
+    width: 100%;
+    padding: 10px 0 8px 8px;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 1;
+    gap: 8px;
+
+    &::after {
+        display: none;
+    }
+
+    .groups-toggle {
+        display: flex;
+        width: 100%;
+        height: 24px;
+        align-items: center;
+        gap: 4px;
+
+        .group-label {
+            font-family: "Open Sans";
+            font-size: 12px;
+            font-style: normal;
+            font-weight: 600;
+            line-height: 16px;
+            text-transform: uppercase;
+            margin-left: 10px;
+            padding: 0;
+            order: 3;
+            color: var(--jj-text-secondary);
+            cursor: initial;
+        }
+
+        button.btn {
+            position: relative;
+            background: rgba(0, 0, 0, 0);
+            color: rgba(0, 0, 0, 0);
+            height: 20px;
+            width: 20px;
+            box-sizing: content-box;
+            border: 1px solid var(--jj-border-secondary);
+            border-radius: var(--border-radius-small);
+            cursor: pointer;
+            padding: 0;
+            transition: background 0.2s ease-in-out;
+
+            &::before {
+                display: block;
+                content: "";
+                background-size: 8px 12px;
+                background-repeat: no-repeat;
+                background-position-x: center;
+                background-position-y: center;
+                height: 100%;
+                width: 100%;
+            }
+
+            &:hover {
+                background: var(--jj-accent-hover);
+            }
+
+            &.btn-expand {
+                order: 1;
+
+                &::before {
+                    background-image: url(@/renderer/pages/nextStudio/assets/Stencil/icon-expand.svg);
+                }
+            }
+
+            &.btn-collapse {
+                order: 2;
+                left: auto;
+
+                &::before {
+                    background-image: url(@/renderer/pages/nextStudio/assets/Stencil/icon-collapse.svg);
+                }
+            }
+        }
+    }
+
+    .search-wrap {
+        height: 30px;
+        padding-right: 8px;
+
+        &::after {
+            content: url(@/renderer/pages/nextStudio/assets/Stencil/icon-search.svg);
+            width: 15.5px;
+            height: 15.5px;
+            display: block;
+            top: -24px;
+            left: 8px;
+            position: relative;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        input {
+            color: var(--jj-text-tertiary);
+            font-family: "Open Sans";
+            font-size: 13.333px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: normal;
+            height: 100%;
+            padding: 7.5px 7px 7px 31.5px;
+            border-radius: var(--border-radius-small);
+            border: 1px solid var(--jj-border-secondary);
+            transition: border-color 0.2s ease-in-out;
+
+            &:hover {
+                border-color: var(--jj-border-primary);
+            }
+
+            &::placeholder {
+                color: var(--jj-text-tertiary);
+                font-family: "Open Sans";
+                font-size: 13.333px;
+                font-style: normal;
+                font-weight: 400;
+                line-height: normal;
+                text-transform: capitalize;
+            }
+        }
+    }
+
+    .content {
+        top: 80px !important;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        height: calc(100% - 80px);
+
+        .group {
+            padding: 0 8px;
+            flex-shrink: 0;
+            max-height: 1000px;
+            transition: max-height 0.3s ease-in;
+            border-width: 0 !important;
+
+            &.closed {
+                max-height: 32px;
+                transition: max-height 0.3s ease-out;
+
+                .group-label::before {
+                    transform: rotate(-90deg);
+                    filter: invert(0.5);
+                }
+            }
+
+            .joint-paper {
+                width: 100% !important;
+            }
+
+            .group-label::before {
+                flex-shrink: 0;
+                display: block;
+                top: auto;
+                left: auto;
+                border-width: 0;
+                margin-right: 8px;
+                margin-left: 4px;
+            }
+        }
+
+        .group-label {
+            border-radius: var(--border-radius-small);
+            background-color: var(--jj-accent-primary);
+            color: var(--jj-text-primary);
+            font-family: "Open Sans";
+            font-size: 12px;
+            font-style: normal;
+            font-weight: 600;
+            padding: 6px 5px 6px 5px;
+            height: 32px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s ease-in-out;
+
+            &::before {
+                width: 10px;
+                height: 20px;
+                content: url(@/renderer/pages/nextStudio/assets/Stencil/icon-opened.svg);
+                transition: transform 0.3s ease;
+            }
+
+            &:hover {
+                background-color: var(--jj-accent-hover);
+            }
+        }
+    }
+}
