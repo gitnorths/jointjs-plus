@@ -79,6 +79,9 @@
       <el-tooltip content="重做" placement="bottom-start" :open-delay=500>
         <el-button class="edit_btn" icon="fa fa-share" @click="redo" :disabled="!showGraphToolBar"></el-button>
       </el-tooltip>
+      <el-tooltip content="适配屏幕" placement="bottom-start" :open-delay=500>
+        <el-button class="m_tool_btn" icon="fa fa-arrows-alt" @click="fitToScreen"></el-button>
+      </el-tooltip>
     </div>
     <!--视图调整区-->
     <div class="editToolBar" v-if="showGraphToolBar">
@@ -196,8 +199,12 @@ export default {
 
         if (R.isNotNil(result)) {
           const tmp = parseFloat(result) / 100
-
-          this.scale = tmp
+          this.scale = tmp < 0 ? 0 : tmp
+          if (tmp > 0 && tmp <= 1) {
+            this.$vbus.$emit('ZOOM_IN', tmp)
+          } else {
+            this.$vbus.$emit('ZOOM_OUT', tmp)
+          }
         }
       }
     },
@@ -206,6 +213,9 @@ export default {
     },
     countDown () {
       return this.$store.getters.countDown
+    },
+    currentPaper () {
+      return this.$store.getters.currentPaper
     }
   },
   watch: {
@@ -287,15 +297,19 @@ export default {
       this.$vbus.$emit('REDO')
     },
     setScale (val) {
-      this.scale = val
+      this.scale = this.currentPaper.zoom()
     },
     resetScale () {
+      this.scale = 1
       this.$vbus.$emit('RESET_SCALE')
     },
     align (direction) {
       return () => {
         this.$vbus.$emit('GRAPH_ALIGN', direction)
       }
+    },
+    fitToScreen () {
+      this.$vbus.$emit('FIT_TO_SCREEN')
     },
     openSignalWatch () {
       this.$vbus.$emit('OPEN_WATCH_DIALOG')

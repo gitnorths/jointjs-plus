@@ -1,6 +1,6 @@
 <template>
   <div class="graphEditorViewContainer" :id="tagKey">
-    <div class="graphEditorContainer" tabIndex="0" ref="graphEditorContainer" @keydown="keyDownHandler">
+    <div class="graphEditorContainer paper-container" tabIndex="0" ref="graphEditorContainer" @keydown="keyDownHandler">
     </div>
     <symbol-dialog :graph="graph" :page-graph="pageGraphDto" ref="dialog"/>
   </div>
@@ -31,6 +31,7 @@ export default {
       recordSet: { insertRecords: [], updateRecords: [], removeRecords: [] }, // 修改记录
       graph: null, // joint graph对象
       paper: null, // joint 画布对象
+      selection: null, // joint 选中对象
       toolsView: null, // joint 工具栏对象
       snaplines: null, // joint 辅助线
       paperScroller: null, // joint 滚动对象
@@ -444,6 +445,36 @@ export default {
         this.judgeChanged()
       }
     },
+    zoomOut (value) {
+      const zoomValue = R.is(Object, value) ? 0.2 : value
+      this.paperScroller.zoom(-0.2, { min: zoomValue })
+      this.$vbus.$emit('SYNC_GRAPH_SCALE')
+    },
+    zoomIn (value) {
+      const zoomValue = R.is(Object, value) ? 2 : value
+      this.paperScroller.zoom(0.2, { max: zoomValue })
+      this.$vbus.$emit('SYNC_GRAPH_SCALE')
+    },
+    resetScale () {
+      this.paperScroller.zoomToFit({
+        minScale: 1,
+        maxScale: 1
+      })
+    },
+    Keyboard () {
+      const keyboard = new ui.Keyboard()
+      keyboard.on({
+        'ctrl+y': this.redo, // redo
+        'ctrl+z': this.undo, // undo
+        '-': this.zoomOut, // zoom out
+        '=': this.zoomIn, // zoom in
+        'up down left right': this.addNewHandler
+      })
+    },
+    addNewHandler (evt) {
+      if (evt.key === 'Control') return
+      console.log('addNewHandler', evt.key)
+    },
     keyDownHandler (evt) {
       const ctrlKey = R.propOr(false, 'ctrlKey', evt)
       const shiftKey = R.propOr(false, 'shiftKey', evt)
@@ -472,6 +503,13 @@ export default {
       if (codeEqual('Escape')) {
         this.cancelAction()
       }
+    },
+    fitToScreen () {
+      this.paperScroller.zoomToFit({
+        minScale: 0.2,
+        maxScale: 2
+      })
+      this.$vbus.$emit('SYNC_GRAPH_SCALE')
     },
     refreshDesc (ignoreTagKeys) {
       if (ignoreTagKeys && R.includes(this.tagKey, ignoreTagKeys)) {
@@ -580,6 +618,50 @@ export default {
       this.paper.on('link:mouseleave', function (linkView) {
         linkView.removeTools()
       })
+    },
+    toggleSelection () {
+      const elements = this.selection.collection.toArray()
+      if (elements.length === 0) return
+      if (elements.length === 1) {
+        this.unGroupElement(elements[0])
+      } else {
+        this.groupElements(elements)
+      }
+    },
+    groupElements (elements) {
+      const minZ = elements.reduce(
+        (z, el) => Math.min(el.get('z') || 0, z),
+        -Infinity
+      )
+
+      // const groupTemplate = elements[0]
+      const groupTemplate = new shapes.standard.Rectangle({
+        attrs: {
+          root: {
+            pointerEvents: 'none'
+          },
+          body: {
+            stroke: '#FF4468',
+            strokeDasharray: '5,5',
+            strokeWidth: 2,
+            fill: '#FF4468',
+            fillOpacity: 0.2
+          }
+        }
+      })
+      const group = groupTemplate.clone()
+      group.set('z', minZ - 1)
+      group.addTo(this.graph)
+      group.embed(elements)
+      group.fitEmbeds()
+      this.selection.collection.reset([group])
+    },
+    unGroupElement (element) {
+      const embeds = element.getEmbeddedCells()
+      if (embeds.length === 0) return
+      element.unembed(embeds)
+      element.remove()
+      this.selection.collection.reset(embeds)
     },
     orthogonalRouter (vertices, opt, linkView) {
         const sourceBBox = linkView.sourceBBox
@@ -1035,6 +1117,13 @@ export default {
 
     // this.snaplines = new ui.Snaplines({ paper: this.paper })
 
+    const selection = this.selection = new ui.Selection({
+      paper: this.paper,
+      useModelGeometry: true,
+      filter: (el) => el.isEmbedded(),
+      handles: []
+    })
+
     this.paperScroller = new ui.PaperScroller({
       paper: this.paper,
       autoResizePaper: true,
@@ -1043,7 +1132,20 @@ export default {
     })
     this.$refs.graphEditorContainer.appendChild(this.paperScroller.render().el)
 
-    this.paper.on('blank:pointerdown', this.paperScroller.startPanning)
+    this.paper.on('blank:pointerdown', (evt) => {
+      selection.startSelecting(evt)
+    })
+    // this.paper.on('blank:pointerdown', this.paperScroller.startPanning)
+    this.paper.on('element:pointerclick', (elementView) => {
+      const element = elementView.model
+      const [group = element] = element.getAncestors().reverse()
+      selection.collection.reset([group])
+    })
+    this.paper.on('element:pointerup', (elementView, evt) => {
+      if (evt.ctrlKey || evt.metaKey) {
+        selection.collection.add(elementView.model)
+      }
+    })
     this.paper.on('paper:pan', (evt, tx, ty) => {
       evt.preventDefault()
       this.paperScroller.el.scrollLeft += tx
@@ -1056,9 +1158,43 @@ export default {
       this.paperScroller.zoom(zoom * scale, { min: 0.2, max: 5, ox, oy, absolute: true })
     })
 
+    selection.collection.on('reset', () => {
+      const elements = selection.collection.toArray()
+      selection.removeHandle('group')
+      if (elements.length === 0) return
+      const [element] = elements
+      if (elements.length > 1) {
+        selection.addHandle({
+          name: 'group',
+          position: 'nw',
+          icon: 'https://assets.codepen.io/7589991/group.svg',
+          attrs: {
+            '.handle': { title: `Group ${elements.length} Elements.` }
+          },
+          events: {
+            pointerdown: () => this.toggleSelection()
+          }
+        })
+      } else if (element.getEmbeddedCells().length > 0) {
+        selection.addHandle({
+          name: 'group',
+          position: 'nw',
+          icon: 'https://assets.codepen.io/7589991/ungroup.svg',
+          attrs: {
+            '.handle': {
+              title: `Ungroup ${element.getEmbeddedCells().length} Elements.`
+            }
+          },
+          events: {
+            pointerdown: () => this.toggleSelection()
+          }
+        })
+      }
+    })
+
     this.initPageGraphDto()
 
-    // this.linkTools()
+    this.Keyboard()
 
     this.$store.commit('setCurrentPaper', this.paperScroller)
 
@@ -1068,6 +1204,10 @@ export default {
     this.$vbus.$on('FOCUS', this.focus)
     this.$vbus.$on('UNDO', this.undo)
     this.$vbus.$on('REDO', this.redo)
+    this.$vbus.$on('RESET_SCALE', this.resetScale)
+    this.$vbus.$on('ZOOM_IN', this.zoomIn)
+    this.$vbus.$on('ZOOM_OUT', this.zoomOut)
+    this.$vbus.$on('FIT_TO_SCREEN', this.fitToScreen)
   },
   destroyed () {
     this.$vbus.$off('REFRESH_WORK_AREA', this.refreshDesc)
@@ -1076,6 +1216,10 @@ export default {
     this.$vbus.$off('FOCUS', this.focus)
     this.$vbus.$off('UNDO', this.undo)
     this.$vbus.$off('REDO', this.redo)
+    this.$vbus.$off('RESET_SCALE', this.resetScale)
+    this.$vbus.$off('ZOOM_IN', this.zoomIn)
+    this.$vbus.$off('ZOOM_OUT', this.zoomOut)
+    this.$vbus.$off('FIT_TO_SCREEN', this.fitToScreen)
   }
 }
 </script>

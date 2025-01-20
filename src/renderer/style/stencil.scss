@@ -18,8 +18,9 @@
     --jj-bg-secondary: var(--gray-3);
     --jj-bg-tertiary: var(--gray-6);
     --jj-bg-quaternary: #edf1f8;
+    --jj-bg-selector: #f56c6c;
     --jj-border-navigator: #4d6490;
-    --jj-border-selector: #137bdd;
+    --jj-border-selector: #f56c6c;
     --jj-border-primary: var(--gray-5);
     --jj-border-secondary: var(--gray-6);
     --jj-border-tertiary: #e0e6ea;
@@ -30,6 +31,7 @@
     --jj-text-secondary: var(--gray-4);
     --jj-text-tertiary: var(--gray-5);
     --jj-text-disabled: var(--gray-6);
+    --jj-text-selector: var(--white);
     --jj-accent-primary: #e2e9f4;
     --jj-accent-secondary: #d9e2f2;
     --jj-accent-tertiary: #d2dde5;
@@ -240,5 +242,37 @@
                 background-color: var(--jj-accent-hover);
             }
         }
+    }
+}
+
+.paper-container {
+    .joint-selection.joint-theme-default {
+        background-color: var(--jj-accent-primary);
+        border: 1px solid var(--jj-border-selector);
+    }
+
+    .joint-selection.joint-theme-default .selection-box {
+        border: 1px solid var(--jj-border-selector);
+        border-style: dashed;
+        margin: -4px 4px 4px -4px;
+    }
+
+    .joint-selection.joint-theme-default .selection-wrapper {
+        border: 1px solid var(--jj-border-selector);
+    }
+
+    .joint-selection.joint-theme-default .handle.resize {
+        cursor: se-resize;
+    }
+
+    .joint-selection.joint-theme-default .box {
+        font-size: 14px;
+        color: var(--jj-text-selector);
+        background-color: var(--jj-bg-selector);
+        font-family: lato-light, Arial, sans-serif;
+    }
+
+    .selection-wrapper[data-selection-length="1"] {
+        display: block !important;
     }
 }
