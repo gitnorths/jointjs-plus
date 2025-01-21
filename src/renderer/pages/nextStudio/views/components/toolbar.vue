@@ -199,7 +199,7 @@ export default {
 
         if (R.isNotNil(result)) {
           const tmp = parseFloat(result) / 100
-          this.scale = tmp < 0 ? 0 : tmp
+          this.scale = tmp
           if (tmp > 0 && tmp <= 1) {
             this.$vbus.$emit('ZOOM_IN', tmp)
           } else {

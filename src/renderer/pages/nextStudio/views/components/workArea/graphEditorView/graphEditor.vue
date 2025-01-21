@@ -17,6 +17,7 @@ import SymbolDialog from './symbolDialog/symbolDialog.vue'
 import { dia, shapes, ui, highlighters } from '@joint/plus'
 import { getVariableTypeString } from '@/model/enum'
 import { Benchmark } from '@/util/consts'
+import { selectionKeyBoard } from './utils/index'
 
 export default {
   name: 'graphEditor',
@@ -31,13 +32,11 @@ export default {
       recordSet: { insertRecords: [], updateRecords: [], removeRecords: [] }, // 修改记录
       graph: null, // joint graph对象
       paper: null, // joint 画布对象
-      selection: null, // joint 选中对象
       toolsView: null, // joint 工具栏对象
       snaplines: null, // joint 辅助线
       selectedCells: null, // joint 选中cell对象
       paperScroller: null, // joint 滚动对象
-      commandManager: null, // joint undo redo管理器
-      movedElementsHash: null // 移动元素的hash值
+      commandManager: null // joint undo redo管理器
     }
   },
   computed: {
@@ -447,73 +446,11 @@ export default {
         this.judgeChanged()
       }
     },
-    zoomOut (value) {
-      const zoomValue = R.is(Object, value) ? 0.2 : value
-      this.paperScroller.zoom(-0.2, { min: zoomValue })
-      this.$vbus.$emit('SYNC_GRAPH_SCALE')
-    },
-    zoomIn (value) {
-      const zoomValue = R.is(Object, value) ? 2 : value
-      this.paperScroller.zoom(0.2, { max: zoomValue })
-      this.$vbus.$emit('SYNC_GRAPH_SCALE')
-    },
     resetScale () {
       this.paperScroller.zoomToFit({
         minScale: 1,
         maxScale: 1
       })
-    },
-    keyboard () {
-      const keyboard = new ui.Keyboard()
-      keyboard.on('delete', () => {
-        if (this.selectedCells?.length) {
-          this.selectedCells.forEach(item => {
-            item.remove()
-          })
-        }
-      })
-      const MOVE_STEP = 20
-      keyboard.on({
-        'up ctrl+up': (evt) => {
-          // Prevent Default Scrolling
-          evt.preventDefault()
-          this.moveCells(0, -MOVE_STEP)
-        },
-        'down  ctrl+down': (evt) => {
-          evt.preventDefault()
-          this.moveCells(0, MOVE_STEP)
-        },
-        'left ctrl+left': (evt) => {
-          evt.preventDefault()
-          this.moveCells(-MOVE_STEP, 0)
-        },
-        'right ctrl+right': (evt) => {
-          evt.preventDefault()
-          this.moveCells(MOVE_STEP, 0)
-        }
-      })
-      keyboard.on({
-        'ctrl+y': this.redo, // redo
-        'ctrl+z': this.undo, // undo
-        '-': this.zoomOut, // zoom out
-        '=': this.zoomIn // zoom in
-      })
-    },
-    moveCells (dx, dy) {
-      const cells = this.selection.collection.toArray()
-      const elements = cells.filter((cell) => cell.isElement())
-      const hash = elements
-        .map((el) => el.id)
-        .sort()
-        .join(' ')
-      const movedPreviously = hash === this.movedElementsHash
-
-      this.graph.startBatch('shift-selection')
-      elements.forEach((el) =>
-        el.translate(dx, dy, { skipHistory: movedPreviously })
-      )
-      this.graph.stopBatch('shift-selection')
-      this.movedElementsHash = hash
     },
     keyDownHandler (evt) {
       const ctrlKey = R.propOr(false, 'ctrlKey', evt)
@@ -658,50 +595,6 @@ export default {
       this.paper.on('link:mouseleave', function (linkView) {
         linkView.removeTools()
       })
-    },
-    toggleSelection () {
-      const elements = this.selection.collection.toArray()
-      if (elements.length === 0) return
-      if (elements.length === 1) {
-        this.unGroupElement(elements[0])
-      } else {
-        this.groupElements(elements)
-      }
-    },
-    groupElements (elements) {
-      const minZ = elements.reduce(
-        (z, el) => Math.min(el.get('z') || 0, z),
-        -Infinity
-      )
-
-      // const groupTemplate = elements[0]
-      const groupTemplate = new shapes.standard.Rectangle({
-        attrs: {
-          root: {
-            pointerEvents: 'none'
-          },
-          body: {
-            stroke: '#FF4468',
-            strokeDasharray: '5,5',
-            strokeWidth: 2,
-            fill: '#FF4468',
-            fillOpacity: 0.2
-          }
-        }
-      })
-      const group = groupTemplate.clone()
-      group.set('z', minZ - 1)
-      group.addTo(this.graph)
-      group.embed(elements)
-      group.fitEmbeds()
-      this.selection.collection.reset([group])
-    },
-    unGroupElement (element) {
-      const embeds = element.getEmbeddedCells()
-      if (embeds.length === 0) return
-      element.unembed(embeds)
-      element.remove()
-      this.selection.collection.reset(embeds)
     },
     orthogonalRouter (vertices, opt, linkView) {
         const sourceBBox = linkView.sourceBBox
@@ -1132,6 +1025,12 @@ export default {
             { x: tox, y: toy }
           ]
         }
+    },
+    zoomIn (val) {
+      this.paperScroller.zoom(0.2, { max: val })
+    },
+    zoomOut (val) {
+      this.paperScroller.zoom(-0.2, { min: val })
     }
   },
   mounted () {
@@ -1151,11 +1050,23 @@ export default {
       async: false,
       defaultLink: new shapes.standard.Link(), // TODO 自定义连线样式
       interactive: { linkMove: true },
-      defaultRouter: { name: 'rightAngle', args: { margin: 20 } },
+      defaultConnectionPoint: {
+        name: 'boundary',
+        args: {
+          offset: 0,
+          extrapolate: true
+        }
+      },
+      defaultRouter: { name: 'rightAngle', args: { margin: 28 } },
       defaultConnector: {
         name: 'straight',
-        args: { cornerType: 'line', cornerPreserveAspectRatio: false }
+        args: { cornerType: 'line', cornerPreserveAspectRatio: true }
       },
+      // defaultRouter: { name: 'rightAngle', args: { margin: 20 } },
+      // defaultConnector: {
+      //   name: 'straight',
+      //   args: { cornerType: 'line', cornerPreserveAspectRatio: false }
+      // },
       // TODO 其它配置
       highlighting: {
         connecting: {
@@ -1174,48 +1085,15 @@ export default {
 
     this.snaplines = new ui.Snaplines({ paper: this.paper })
 
-    const selection = this.selection = new ui.Selection({
-      paper: this.paper,
-      useModelGeometry: true,
-      filter: (el) => el.isEmbedded()
-      // handles: [
-      //   {
-      //     name: 'group',
-      //     position: 'nw',
-      //     icon: 'https://assets.codepen.io/7589991/alignment.svg',
-      //     events: {
-      //       pointerdown: (evt) => this.openAlignmentOptions(evt.target)
-      //     }
-      //   }
-      // ]
-    })
-    selection.removeHandle('resize')
-    selection.removeHandle('rotate')
-
     this.paperScroller = new ui.PaperScroller({
       paper: this.paper,
       autoResizePaper: true,
       scrollWhileDragging: true,
       cursor: 'grab'
     })
+
     this.$refs.graphEditorContainer.appendChild(this.paperScroller.render().el)
 
-    this.paper.on('blank:pointerdown', (evt) => {
-      selection.startSelecting(evt)
-    })
-    // this.paper.on('blank:pointerdown', this.paperScroller.startPanning)
-    this.paper.on('element:pointerclick', (elementView) => {
-      this.selectedCells = []
-      const element = elementView.model
-      const [group = element] = element.getAncestors().reverse()
-      selection.collection.reset([group])
-      this.selectedCells = [element]
-    })
-    this.paper.on('element:pointerup', (elementView, evt) => {
-      if (evt.ctrlKey || evt.metaKey) {
-        selection.collection.add(elementView.model)
-      }
-    })
     this.paper.on('paper:pan', (evt, tx, ty) => {
       evt.preventDefault()
       this.paperScroller.el.scrollLeft += tx
@@ -1228,76 +1106,11 @@ export default {
       this.paperScroller.zoom(zoom * scale, { min: 0.2, max: 5, ox, oy, absolute: true })
     })
 
-    this.graph.on('change', () => (this.movedElementsHash = ''))
-
-    this.paper.on('cell:mouseenter', (cellView, evt) => {
-      let selector, padding
-      if (cellView.model.isLink()) {
-        if (highlighters.stroke.get(cellView, 'selection')) return
-        selector = { label: 0, selector: 'labelBody' }
-        padding = 2
-      } else {
-        selector = 'body'
-        padding = 4
-      }
-
-      const frame = highlighters.mask.add(cellView, selector, 'frame', {
-        padding,
-        layer: dia.Paper.Layers.FRONT,
-        attrs: {
-          'stroke-width': 1.5,
-          'stroke-linejoin': 'round'
-        }
-      })
-      frame.el.classList.add('jj-frame')
-    })
-
-    this.paper.on('cell:mouseleave', () => {
-      highlighters.mask.removeAll(this.paper, 'frame')
-    })
-
-    // 框选分组功能
-    selection.collection.on('reset', () => {
-      const elements = selection.collection.toArray()
-      this.selectedCells = []
-      this.selectedCells = elements
-    //   selection.removeHandle('group')
-    //   if (elements.length === 0) return
-    //   const [element] = elements
-    //   if (elements.length > 1) {
-    //     selection.addHandle({
-    //       name: 'group',
-    //       position: 'nw',
-    //       icon: 'https://assets.codepen.io/7589991/group.svg',
-    //       attrs: {
-    //         '.handle': { title: `Group ${elements.length} Elements.` }
-    //       },
-    //       events: {
-    //         pointerdown: () => this.toggleSelection()
-    //       }
-    //     })
-    //   } else if (element.getEmbeddedCells().length > 0) {
-    //     selection.addHandle({
-    //       name: 'group',
-    //       position: 'nw',
-    //       icon: 'https://assets.codepen.io/7589991/ungroup.svg',
-    //       attrs: {
-    //         '.handle': {
-    //           title: `Ungroup ${element.getEmbeddedCells().length} Elements.`
-    //         }
-    //       },
-    //       events: {
-    //         pointerdown: () => this.toggleSelection()
-    //       }
-    //     })
-    //   }
-    })
-
     this.initPageGraphDto()
 
-    this.keyboard()
-
     this.$store.commit('setCurrentPaper', this.paperScroller)
+
+    selectionKeyBoard(this.paper, this.graph, this.commandManager)
 
     this.$vbus.$on('REFRESH_WORK_AREA', this.refreshDesc)
     this.$vbus.$on('RELOAD_WORK_AREA', this.reset)

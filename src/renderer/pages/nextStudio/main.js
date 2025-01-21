@@ -25,7 +25,6 @@ VXETable.setConfig({
 })
 
 Vue.use(VXETable)
-
 Vue.use(ElementUI)
 Vue.use(plugin)
 
