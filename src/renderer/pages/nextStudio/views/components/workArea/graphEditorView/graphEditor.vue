@@ -14,7 +14,7 @@ import { LabelIn, LabelOut, PageAnnotation } from '@/model/dto'
 import { objDiff } from '@/renderer/common/util'
 import { getObjContext, instanceVFB } from '@/renderer/pages/nextStudio/action'
 import SymbolDialog from './symbolDialog/symbolDialog.vue'
-import { dia, shapes, ui } from '@joint/plus'
+import { dia, shapes, ui, highlighters } from '@joint/plus'
 import { getVariableTypeString } from '@/model/enum'
 import { Benchmark } from '@/util/consts'
 
@@ -34,8 +34,10 @@ export default {
       selection: null, // joint 选中对象
       toolsView: null, // joint 工具栏对象
       snaplines: null, // joint 辅助线
+      selectedCells: null, // joint 选中cell对象
       paperScroller: null, // joint 滚动对象
-      commandManager: null // joint undo redo管理器
+      commandManager: null, // joint undo redo管理器
+      movedElementsHash: null // 移动元素的hash值
     }
   },
   computed: {
@@ -461,19 +463,57 @@ export default {
         maxScale: 1
       })
     },
-    Keyboard () {
+    keyboard () {
       const keyboard = new ui.Keyboard()
+      keyboard.on('delete', () => {
+        if (this.selectedCells?.length) {
+          this.selectedCells.forEach(item => {
+            item.remove()
+          })
+        }
+      })
+      const MOVE_STEP = 20
+      keyboard.on({
+        'up ctrl+up': (evt) => {
+          // Prevent Default Scrolling
+          evt.preventDefault()
+          this.moveCells(0, -MOVE_STEP)
+        },
+        'down  ctrl+down': (evt) => {
+          evt.preventDefault()
+          this.moveCells(0, MOVE_STEP)
+        },
+        'left ctrl+left': (evt) => {
+          evt.preventDefault()
+          this.moveCells(-MOVE_STEP, 0)
+        },
+        'right ctrl+right': (evt) => {
+          evt.preventDefault()
+          this.moveCells(MOVE_STEP, 0)
+        }
+      })
       keyboard.on({
         'ctrl+y': this.redo, // redo
         'ctrl+z': this.undo, // undo
         '-': this.zoomOut, // zoom out
-        '=': this.zoomIn, // zoom in
-        'up down left right': this.addNewHandler
+        '=': this.zoomIn // zoom in
       })
     },
-    addNewHandler (evt) {
-      if (evt.key === 'Control') return
-      console.log('addNewHandler', evt.key)
+    moveCells (dx, dy) {
+      const cells = this.selection.collection.toArray()
+      const elements = cells.filter((cell) => cell.isElement())
+      const hash = elements
+        .map((el) => el.id)
+        .sort()
+        .join(' ')
+      const movedPreviously = hash === this.movedElementsHash
+
+      this.graph.startBatch('shift-selection')
+      elements.forEach((el) =>
+        el.translate(dx, dy, { skipHistory: movedPreviously })
+      )
+      this.graph.stopBatch('shift-selection')
+      this.movedElementsHash = hash
     },
     keyDownHandler (evt) {
       const ctrlKey = R.propOr(false, 'ctrlKey', evt)
@@ -1110,19 +1150,47 @@ export default {
       drawGrid: true,
       async: false,
       defaultLink: new shapes.standard.Link(), // TODO 自定义连线样式
-      interactive: { addLinkFromMagnet: true, linkMove: true }
-      // defaultRouter: { name: 'orthogonal' }
+      interactive: { linkMove: true },
+      defaultRouter: { name: 'rightAngle', args: { margin: 20 } },
+      defaultConnector: {
+        name: 'straight',
+        args: { cornerType: 'line', cornerPreserveAspectRatio: false }
+      },
       // TODO 其它配置
+      highlighting: {
+        connecting: {
+          name: 'mask',
+          options: {
+            attrs: {
+              stroke: '#80aaff',
+              'stroke-width': 4,
+              'stroke-linecap': 'butt',
+              'stroke-linejoin': 'miter'
+            }
+          }
+        }
+      }
     })
 
-    // this.snaplines = new ui.Snaplines({ paper: this.paper })
+    this.snaplines = new ui.Snaplines({ paper: this.paper })
 
     const selection = this.selection = new ui.Selection({
       paper: this.paper,
       useModelGeometry: true,
-      filter: (el) => el.isEmbedded(),
-      handles: []
+      filter: (el) => el.isEmbedded()
+      // handles: [
+      //   {
+      //     name: 'group',
+      //     position: 'nw',
+      //     icon: 'https://assets.codepen.io/7589991/alignment.svg',
+      //     events: {
+      //       pointerdown: (evt) => this.openAlignmentOptions(evt.target)
+      //     }
+      //   }
+      // ]
     })
+    selection.removeHandle('resize')
+    selection.removeHandle('rotate')
 
     this.paperScroller = new ui.PaperScroller({
       paper: this.paper,
@@ -1137,9 +1205,11 @@ export default {
     })
     // this.paper.on('blank:pointerdown', this.paperScroller.startPanning)
     this.paper.on('element:pointerclick', (elementView) => {
+      this.selectedCells = []
       const element = elementView.model
       const [group = element] = element.getAncestors().reverse()
       selection.collection.reset([group])
+      this.selectedCells = [element]
     })
     this.paper.on('element:pointerup', (elementView, evt) => {
       if (evt.ctrlKey || evt.metaKey) {
@@ -1158,43 +1228,74 @@ export default {
       this.paperScroller.zoom(zoom * scale, { min: 0.2, max: 5, ox, oy, absolute: true })
     })
 
+    this.graph.on('change', () => (this.movedElementsHash = ''))
+
+    this.paper.on('cell:mouseenter', (cellView, evt) => {
+      let selector, padding
+      if (cellView.model.isLink()) {
+        if (highlighters.stroke.get(cellView, 'selection')) return
+        selector = { label: 0, selector: 'labelBody' }
+        padding = 2
+      } else {
+        selector = 'body'
+        padding = 4
+      }
+
+      const frame = highlighters.mask.add(cellView, selector, 'frame', {
+        padding,
+        layer: dia.Paper.Layers.FRONT,
+        attrs: {
+          'stroke-width': 1.5,
+          'stroke-linejoin': 'round'
+        }
+      })
+      frame.el.classList.add('jj-frame')
+    })
+
+    this.paper.on('cell:mouseleave', () => {
+      highlighters.mask.removeAll(this.paper, 'frame')
+    })
+
+    // 框选分组功能
     selection.collection.on('reset', () => {
       const elements = selection.collection.toArray()
-      selection.removeHandle('group')
-      if (elements.length === 0) return
-      const [element] = elements
-      if (elements.length > 1) {
-        selection.addHandle({
-          name: 'group',
-          position: 'nw',
-          icon: 'https://assets.codepen.io/7589991/group.svg',
-          attrs: {
-            '.handle': { title: `Group ${elements.length} Elements.` }
-          },
-          events: {
-            pointerdown: () => this.toggleSelection()
-          }
-        })
-      } else if (element.getEmbeddedCells().length > 0) {
-        selection.addHandle({
-          name: 'group',
-          position: 'nw',
-          icon: 'https://assets.codepen.io/7589991/ungroup.svg',
-          attrs: {
-            '.handle': {
-              title: `Ungroup ${element.getEmbeddedCells().length} Elements.`
-            }
-          },
-          events: {
-            pointerdown: () => this.toggleSelection()
-          }
-        })
-      }
+      this.selectedCells = []
+      this.selectedCells = elements
+    //   selection.removeHandle('group')
+    //   if (elements.length === 0) return
+    //   const [element] = elements
+    //   if (elements.length > 1) {
+    //     selection.addHandle({
+    //       name: 'group',
+    //       position: 'nw',
+    //       icon: 'https://assets.codepen.io/7589991/group.svg',
+    //       attrs: {
+    //         '.handle': { title: `Group ${elements.length} Elements.` }
+    //       },
+    //       events: {
+    //         pointerdown: () => this.toggleSelection()
+    //       }
+    //     })
+    //   } else if (element.getEmbeddedCells().length > 0) {
+    //     selection.addHandle({
+    //       name: 'group',
+    //       position: 'nw',
+    //       icon: 'https://assets.codepen.io/7589991/ungroup.svg',
+    //       attrs: {
+    //         '.handle': {
+    //           title: `Ungroup ${element.getEmbeddedCells().length} Elements.`
+    //         }
+    //       },
+    //       events: {
+    //         pointerdown: () => this.toggleSelection()
+    //       }
+    //     })
+    //   }
     })
 
     this.initPageGraphDto()
 
-    this.Keyboard()
+    this.keyboard()
 
     this.$store.commit('setCurrentPaper', this.paperScroller)
 

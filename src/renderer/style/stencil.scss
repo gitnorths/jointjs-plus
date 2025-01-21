@@ -11,6 +11,14 @@
     --gray-6: #d1d5db;
     --gray-7: #f3f4f6;
     --black: #000000;
+    --jj-color1: #ed2637;
+    --jj-color2: #131e29;
+    --jj-color3: #dde6ed;
+    --jj-color4: #f6f740;
+    --jj-color5: #0075f2;
+    --jj-color6: #1a2938;
+    --jj-color7: #cad8e3;
+    --jj-frame-color: var(--jj-color5);
     --jj-bg-header: var(--gray-2);
     --jj-bg-tooltip: var(--gray-2);
     --jj-bg-navigator-path-fill: #8da9d3;
@@ -18,9 +26,9 @@
     --jj-bg-secondary: var(--gray-3);
     --jj-bg-tertiary: var(--gray-6);
     --jj-bg-quaternary: #edf1f8;
-    --jj-bg-selector: #f56c6c;
+    --jj-bg-selector: 0, 117, 242;
     --jj-border-navigator: #4d6490;
-    --jj-border-selector: #f56c6c;
+    --jj-border-selector: var(--jj-color5)
     --jj-border-primary: var(--gray-5);
     --jj-border-secondary: var(--gray-6);
     --jj-border-tertiary: #e0e6ea;
@@ -259,6 +267,7 @@
 
     .joint-selection.joint-theme-default .selection-wrapper {
         border: 1px solid var(--jj-border-selector);
+        background-color: rgba(var(--jj-bg-selector), 0.2);
     }
 
     .joint-selection.joint-theme-default .handle.resize {
@@ -268,11 +277,15 @@
     .joint-selection.joint-theme-default .box {
         font-size: 14px;
         color: var(--jj-text-selector);
-        background-color: var(--jj-bg-selector);
+        background-color: rgb(var(--jj-bg-selector));
         font-family: lato-light, Arial, sans-serif;
     }
 
     .selection-wrapper[data-selection-length="1"] {
         display: block !important;
+    }
+
+    .jj-frame {
+        fill: var(--jj-frame-color);
     }
 }
