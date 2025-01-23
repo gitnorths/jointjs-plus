@@ -16,6 +16,8 @@ import { ui } from '@joint/plus'
 import { formatPathIdType } from '@/util'
 import { getDeviceSymbol } from '@/renderer/pages/nextStudio/action'
 
+import '@/renderer/style/stencil.scss'
+
 export default {
   name: 'symbolProtoList',
   components: {},
@@ -29,6 +31,9 @@ export default {
     },
     currentPaper () {
       return this.$store.getters.currentPaper
+    },
+    snaplines () {
+      return this.$store.getters.snaplines
     },
     symbolNameSpace () {
       return this.$store.getters.symbolNameSpace
@@ -98,6 +103,7 @@ export default {
         const paperOptions = { background: { color: '#F5F5F5' } }
         const options = {
           paper: this.currentPaper,
+          snaplines: this.snaplines,
           groupsToggleButtons: true,
           groups: {
             'base/extend': { label: 'Base/Extend', index: 0, closed: true, paperOptions }
@@ -167,40 +173,9 @@ export default {
         Object.keys(stencils).forEach((key) => {
           this.stencil.loadGroup(stencils[key], key)
         })
-      }
-    },
-    initStencil () {
-      if (!this.currentPaper) return
-      let index = 0
-      const stencilObj = {}
-      this.archiveProtoList.forEach((item) => {
-        const children = item.children
-        if (children?.length) {
-          children.forEach((childItem) => {
-            const name = `${item.title}/${childItem.title}`
-            stencilObj[name] = { index, label: name, closed: true }
-            const stencilData = []
-            if (childItem.children?.length) {
-              for (const protoSymbol of childItem.children) {
-                stencilData.push({ type: formatPathIdType(protoSymbol.pathId) })
-              }
-            }
-            stencilObj[name] = stencilData
-            index++
-          })
-        }
-      })
-      this.stencilOptions.groups = stencilObj
 
-      const stencil = this.stencil = new ui.Stencil({
-          // graph: this.symbolGraph,
-          paper: this.currentPaper,
-          ...this.stencilOptions
-      })
-      this.$refs.stencilContainer.appendChild(stencil.render().el)
-      Object.keys(stencilObj).forEach(key => {
-        this.stencil.loadGroup(stencilObj[key], key)
-      })
+        this.$store.commit('setCurrentStencil', this.stencil)
+      }
     }
   },
   mounted () {

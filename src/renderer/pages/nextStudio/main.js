@@ -1,6 +1,5 @@
 import 'element-ui/lib/theme-chalk/index.css'
 import '@/renderer/style/style.scss'
-import '@/renderer/style/stencil.scss'
 import 'vxe-table/lib/style.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import '@joint/plus/joint-plus.css'
@@ -25,6 +24,7 @@ VXETable.setConfig({
 })
 
 Vue.use(VXETable)
+
 Vue.use(ElementUI)
 Vue.use(plugin)
 

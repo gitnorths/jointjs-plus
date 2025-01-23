@@ -1,101 +1,25 @@
-import { ui, dia, linkTools, highlighters } from '@joint/plus'
-import * as R from 'ramda'
-import VBus from '@/renderer/common/vbus'
+import { ui, dia, highlighters } from '@joint/plus'
 import store from '@/renderer/pages/nextStudio/store'
 
-export function selectionKeyBoard (paper, graph, commandManager) {
+export function selectionKeyBoard () {
   const paperScroller = store.getters.currentPaper
-  let selectedCells = []
+  const commandManager = store.getters.commandManager
+  const stencil = store.getters.currentStencil
+  const graph = store.getters.graph
+  const paper = store.getters.paper
 
+  const clipboard = new ui.Clipboard()
   const selection = new ui.Selection({
-    paper,
-    useModelGeometry: true
+    paper: paperScroller,
+    useModelGeometry: true,
+    translateConnectedLinks: ui.Selection.ConnectedLinksTranslation.SUBGRAPH
   })
 
   selection.removeHandle('resize')
   selection.removeHandle('rotate')
 
-  // 框选分组功能
-  selection.collection.on('reset', () => {
-    selectedCells.length = 0
-    const elements = selection.collection.toArray()
-    selectedCells = elements
-  })
-
-  paper.on('blank:pointerdown', (evt) => {
-    selection.startSelecting(evt)
-  })
-
-  paper.on('element:pointerclick', (elementView, event) => {
-    selectedCells.length = 0
-    selection.collection.reset([elementView.model])
-    // highlighters.mask.removeAll(paper)
-    // highlighters.mask.add(elementView, 'body', 'highlighter-selected', {
-    //   layer: dia.Paper.Layers.BACK,
-    //   padding: 2,
-    //   attrs: {
-    //     stroke: '#0075f2',
-    //     'stroke-width': 4,
-    //     'stroke-linejoin': 'round'
-    //   }
-    // })
-    selectedCells.push(elementView.model)
-  })
-
-  paper.on('element:pointerup', (elementView, evt) => {
-    if (evt.ctrlKey || evt.metaKey) {
-      selection.collection.add(elementView.model)
-    }
-  })
-
   paper.on('blank:pointerclick', () => {
     highlighters.mask.removeAll(paper)
-    selectedCells.length = 0
-  })
-
-  paper.on('link:pointerclick', (cellView) => {
-    paper.removeTools()
-    dia.HighlighterView.removeAll(paper)
-    const snapAnchor = function (coords, endView) {
-      const bbox = endView.model.getBBox()
-      // Find the closest point on the bbox border.
-      const point = bbox.pointNearestToPoint(coords)
-      const center = bbox.center()
-      // Snap the point to the center of the bbox if it's close enough.
-      const snapRadius = 10
-      if (Math.abs(point.x - center.x) < snapRadius) {
-        point.x = center.x
-      }
-      if (Math.abs(point.y - center.y) < snapRadius) {
-        point.y = center.y
-      }
-      return point
-    }
-    const toolsView = new dia.ToolsView({
-      tools: [
-        new linkTools.TargetAnchor({
-          snap: snapAnchor,
-          resetAnchor: cellView.model.prop(['target', 'anchor'])
-        }),
-        new linkTools.SourceAnchor({
-          snap: snapAnchor,
-          resetAnchor: cellView.model.prop(['source', 'anchor'])
-        })
-      ]
-    })
-    toolsView.el.classList.add('jj-flow-tools')
-    cellView.addTools(toolsView)
-    // Add copy of the link <path> element behind the link.
-    // The selection link frame should be behind all elements and links.
-    const strokeHighlighter = StrokeHighlighter.add(
-      cellView,
-      'root',
-      'selection',
-      {
-        layer: dia.Paper.Layers.BACK
-      }
-    )
-    strokeHighlighter.el.classList.add('jj-flow-selection')
   })
 
   const { mask: MaskHighlighter, stroke: StrokeHighlighter } = highlighters
@@ -131,39 +55,130 @@ export function selectionKeyBoard (paper, graph, commandManager) {
   const MOVE_STEP = 20
   let movedElementsHash = ''
 
-  keyboard.on('delete', () => {
-    if (selectedCells?.length) {
-      selectedCells.forEach(item => {
-        item.remove()
-      })
-    }
-  })
-
   keyboard.on({
-    'up ctrl+up': (evt) => {
+
+    'ctrl+c': () => {
+      clipboard.copyElements(selection.collection, graph)
+    },
+
+    'ctrl+v': () => {
+      const pastedCells = clipboard.pasteCells(graph)
+      const elements = pastedCells.filter((cell) => cell.isElement())
+      selection.collection.reset(elements)
+    },
+
+    'ctrl+x shift+delete': () => {
+      clipboard.cutElements(selection.collection, graph)
+    },
+
+    'delete backspace': (evt) => {
+      evt.preventDefault()
+      graph.removeCells(selection.collection.toArray())
+    },
+
+    'ctrl+z': () => {
+      commandManager.undo()
+      selection.collection.reset([])
+    },
+
+    'ctrl+y': () => {
+      commandManager.redo()
+      selection.collection.reset([])
+    },
+
+    'ctrl+a': (evt) => {
+      evt.preventDefault()
+      selection.collection.reset(graph.getElements())
+    },
+
+    'ctrl+plus': (evt) => {
+        evt.preventDefault()
+        paperScroller.zoom(0.2, { max: 5, grid: 0.2 })
+    },
+
+    'ctrl+minus': (evt) => {
+        evt.preventDefault()
+        paperScroller.zoom(-0.2, { min: 0.2, grid: 0.2 })
+    },
+
+    'keydown:shift': (evt) => {
+      paperScroller.setCursor('crosshair')
+    },
+
+    'keyup:shift': () => {
+      paperScroller.setCursor('grab')
+    },
+
+    'ctrl+up': (evt) => {
       // Prevent Default Scrolling
       evt.preventDefault()
       moveCells(0, -MOVE_STEP)
     },
-    'down ctrl+down': (evt) => {
+
+    'ctrl+down': (evt) => {
       evt.preventDefault()
       moveCells(0, MOVE_STEP)
     },
-    'left ctrl+left': (evt) => {
+
+    'ctrl+left': (evt) => {
       evt.preventDefault()
       moveCells(-MOVE_STEP, 0)
     },
-    'right ctrl+right': (evt) => {
+
+    'ctrl+right': (evt) => {
       evt.preventDefault()
       moveCells(MOVE_STEP, 0)
     }
   })
 
-  keyboard.on({
-    'ctrl+y': redo, // redo
-    'ctrl+z': undo, // undo
-    'ctrl+-': zoomOut, // zoom out
-    'ctrl+=': zoomIn // zoom in
+  paper.on('blank:pointerdown', (evt, x, y) => {
+    // 当用户按住 Shift 键并抓住纸张的空白区域时，启动选择。
+    // 否则，启动纸盘。
+    if (keyboard.isActive('shift', evt)) {
+        selection.startSelecting(evt)
+    } else {
+        selection.collection.reset([])
+        paperScroller.startPanning(evt, x, y)
+        paper.removeTools()
+    }
+  })
+
+  paper.on('cell:pointerdown element:magnet:pointerdown', (cellView, evt) => {
+    // 当用户按住 Shift 键并抓住一个单元格时开始选择。
+    if (!keyboard.isActive('shift', evt)) return
+    cellView.preventDefaultInteraction(evt)
+    selection.startSelecting(evt)
+  })
+
+  paper.on('element:pointerdown', (elementView, evt) => {
+    const element = elementView.model
+    // 按下 CTRL/Meta 键时挑选元素。
+    if (!keyboard.isActive('ctrl meta', evt)) return
+    // 如果单击元素时按下 CTRL/Meta 键，则选择一个元素。
+    if (selection.collection.find(cell => cell.isLink())) {
+        // 不允许在选择中混合链接和元素
+        selection.collection.reset([element])
+    } else {
+        if (selection.collection.includes(element)) {
+            selection.collection.remove(element)
+        } else {
+            selection.collection.add(element)
+        }
+    }
+  })
+
+  paper.on('cell:pointerup', (cellView, evt) => {
+    const cell = cellView.model
+    // 当用户点击时选择一个单元格
+    // 除非该单元格已经是选择的一部分。
+    if (keyboard.isActive('ctrl meta', evt)) return
+    if (selection.collection.includes(cell)) return
+    selection.collection.reset([cell])
+  })
+
+  stencil.on('element:drop', (elementView) => {
+    // 选择掉入纸张的元素
+    selection.collection.reset([elementView.model])
   })
 
   paper.on('cell:mouseleave', () => {
@@ -171,34 +186,6 @@ export function selectionKeyBoard (paper, graph, commandManager) {
   })
 
   graph.on('change', () => (movedElementsHash = ''))
-
-  function undo () {
-    commandManager.undo()
-  }
-
-  function redo () {
-    commandManager.redo()
-  }
-
-  function zoomIn (value) {
-    const zoomValue = R.is(Object, value) ? 2 : value
-    paperScroller.zoom(0.2, { max: zoomValue })
-    if (VBus) {
-      VBus.$emit('SYNC_GRAPH_SCALE')
-    } else {
-        console.error('VBus is undefined when trying to emit zoomInEvent')
-    }
-  }
-
-  function zoomOut (value) {
-    const zoomValue = R.is(Object, value) ? 0.2 : value
-    paperScroller.zoom(-0.2, { min: zoomValue })
-    if (VBus) {
-      VBus.$emit('SYNC_GRAPH_SCALE')
-    } else {
-        console.error('VBus is undefined when trying to emit zoomOutEvent')
-    }
-  }
 
   function moveCells (dx, dy) {
     const cells = selection.collection.toArray()

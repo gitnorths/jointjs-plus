@@ -10,6 +10,7 @@ import DebugModeStore from './debugModeStore'
 import SearchStore from './searchStore'
 import VfbUpdateStore from './vfbUpdateStore'
 import PaperStore from './paperStore'
+import StencilStore from './stencilStore'
 
 Vue.use(Vuex)
 export default new Vuex.Store({
@@ -22,6 +23,7 @@ export default new Vuex.Store({
     DebugModeStore,
     SearchStore,
     VfbUpdateStore,
-    PaperStore
+    PaperStore,
+    StencilStore
   }
 })

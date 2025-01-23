@@ -27,16 +27,14 @@ export default {
   },
   data () {
     return {
-      loadingService: null, // 加载
-      orgPageGraph: null, // 原始page对象
-      recordSet: { insertRecords: [], updateRecords: [], removeRecords: [] }, // 修改记录
-      graph: null, // joint graph对象
-      paper: null, // joint 画布对象
-      toolsView: null, // joint 工具栏对象
-      snaplines: null, // joint 辅助线
-      selectedCells: null, // joint 选中cell对象
-      paperScroller: null, // joint 滚动对象
-      commandManager: null // joint undo redo管理器
+      loadingService: null,
+      orgPageGraph: null,
+      recordSet: { insertRecords: [], updateRecords: [], removeRecords: [] },
+      graph: null,
+      paper: null,
+      snaplines: null,
+      paperScroller: null,
+      commandManager: null
     }
   },
   computed: {
@@ -1106,11 +1104,38 @@ export default {
       this.paperScroller.zoom(zoom * scale, { min: 0.2, max: 5, ox, oy, absolute: true })
     })
 
+    this.paper.on('blank:pointerdown', () => {
+      this.removeAllTools()
+    })
+
+    this.paper.on('link:pointerdblclick', (linkView) => {
+      this.removeAllTools()
+      this.showLinkTools(linkView)
+    })
+
+    this.paper.on('cell:pointerdblclick', (cell, evt, x, y) => {
+      if (cell.model.attributes.type === 'standard.Link') {
+        return
+      }
+      this.$refs.blockEditModal.show(cell.model.attributes.data)
+      this.$nextTick(() => {
+        this.$refs.blockEditModal.$el.focus()
+      })
+    })
+
+    this.paperScroller.on('scroll', () => {
+      this.$vbus.$emit('SYNC_GRAPH_SCALE')
+    })
+
     this.initPageGraphDto()
 
+    this.$store.commit('setGraph', this.graph)
+    this.$store.commit('setCommandManager', this.commandManager)
+    this.$store.commit('setPaper', this.paper)
+    this.$store.commit('setSnaplines', this.snaplines)
     this.$store.commit('setCurrentPaper', this.paperScroller)
 
-    selectionKeyBoard(this.paper, this.graph, this.commandManager)
+    selectionKeyBoard()
 
     this.$vbus.$on('REFRESH_WORK_AREA', this.refreshDesc)
     this.$vbus.$on('RELOAD_WORK_AREA', this.reset)

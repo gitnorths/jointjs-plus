@@ -2,8 +2,9 @@ const PaperStore = {
   state: {
     commandManager: null,
     currentPaper: null,
-    selectedCells: [],
-    selection: null
+    snaplines: null,
+    graph: null,
+    paper: null
   },
   getters: {
     commandManager: (state) => {
@@ -12,11 +13,14 @@ const PaperStore = {
     currentPaper: (state) => {
       return state.currentPaper
     },
-    selectedCells: (state) => {
-      return state.selectedCells
+    snaplines: (state) => {
+      return state.snaplines
     },
-    selection: (state) => {
-      return state.selection
+    graph: (state) => {
+      return state.graph
+    },
+    paper: (state) => {
+      return state.paper
     }
   },
   mutations: {
@@ -26,11 +30,14 @@ const PaperStore = {
     setCurrentPaper (state, currentPaper) {
       state.currentPaper = currentPaper
     },
-    setSelectedCells (state, selectedCells) {
-      state.selectedCells = selectedCells
+    setSnaplines (state, snaplines) {
+      state.snaplines = snaplines
     },
-    setSelection (state, selection) {
-      state.selection = selection
+    setGraph (state, graph) {
+      state.graph = graph
+    },
+    setPaper (state, paper) {
+      state.paper = paper
     }
   },
   actions: {}
