@@ -1,7 +1,8 @@
 import { ui, dia, highlighters } from '@joint/plus'
+import * as R from 'ramda'
 import store from '@/renderer/pages/nextStudio/store'
 
-export function selectionKeyBoard () {
+export function selectionKeyBoard() {
   const paperScroller = store.getters.currentPaper
   const commandManager = store.getters.commandManager
   const stencil = store.getters.currentStencil
@@ -17,6 +18,14 @@ export function selectionKeyBoard () {
 
   selection.removeHandle('resize')
   selection.removeHandle('rotate')
+
+  // selection.collection.on('reset add remove', () => onSelectionChange())
+
+  graph.on('remove', (cell) => {
+    // 如果元素从图中删除，也从选择中删除
+    if (!selection.collection.has(cell)) return
+    selection.collection.reset(selection.collection.toArray().filter(c => c !== cell))
+  })
 
   paper.on('blank:pointerclick', () => {
     highlighters.mask.removeAll(paper)
@@ -73,17 +82,23 @@ export function selectionKeyBoard () {
 
     'delete backspace': (evt) => {
       evt.preventDefault()
-      graph.removeCells(selection.collection.toArray())
+      const e = selection.collection.toArray()
+      // 数据量较大时必须先清空selection集合，否则会导致卡顿
+      selection.collection.reset([])
+      // graph.removeCells(e)
+      graph.removeCells(e, {
+        selection: selection.cid
+      })
     },
 
     'ctrl+z': () => {
-      commandManager.undo()
       selection.collection.reset([])
+      commandManager.undo()
     },
 
     'ctrl+y': () => {
-      commandManager.redo()
       selection.collection.reset([])
+      commandManager.redo()
     },
 
     'ctrl+a': (evt) => {
@@ -92,13 +107,13 @@ export function selectionKeyBoard () {
     },
 
     'ctrl+plus': (evt) => {
-        evt.preventDefault()
-        paperScroller.zoom(0.2, { max: 5, grid: 0.2 })
+      evt.preventDefault()
+      paperScroller.zoom(0.2, { max: 5, grid: 0.2 })
     },
 
     'ctrl+minus': (evt) => {
-        evt.preventDefault()
-        paperScroller.zoom(-0.2, { min: 0.2, grid: 0.2 })
+      evt.preventDefault()
+      paperScroller.zoom(-0.2, { min: 0.2, grid: 0.2 })
     },
 
     'keydown:shift': (evt) => {
@@ -135,11 +150,11 @@ export function selectionKeyBoard () {
     // 当用户按住 Shift 键并抓住纸张的空白区域时，启动选择。
     // 否则，启动纸盘。
     if (keyboard.isActive('shift', evt)) {
-        selection.startSelecting(evt)
+      selection.startSelecting(evt)
     } else {
-        selection.collection.reset([])
-        paperScroller.startPanning(evt, x, y)
-        paper.removeTools()
+      selection.collection.reset([])
+      paperScroller.startPanning(evt, x, y)
+      paper.removeTools()
     }
   })
 
@@ -156,14 +171,14 @@ export function selectionKeyBoard () {
     if (!keyboard.isActive('ctrl meta', evt)) return
     // 如果单击元素时按下 CTRL/Meta 键，则选择一个元素。
     if (selection.collection.find(cell => cell.isLink())) {
-        // 不允许在选择中混合链接和元素
-        selection.collection.reset([element])
+      // 不允许在选择中混合链接和元素
+      selection.collection.reset([element])
     } else {
-        if (selection.collection.includes(element)) {
-            selection.collection.remove(element)
-        } else {
-            selection.collection.add(element)
-        }
+      if (selection.collection.includes(element)) {
+        selection.collection.remove(element)
+      } else {
+        selection.collection.add(element)
+      }
     }
   })
 
@@ -176,10 +191,12 @@ export function selectionKeyBoard () {
     selection.collection.reset([cell])
   })
 
-  stencil.on('element:drop', (elementView) => {
-    // 选择掉入纸张的元素
-    selection.collection.reset([elementView.model])
-  })
+  if (!R.isNil(stencil)) {
+    stencil.on('element:drop', (elementView) => {
+      // 选择掉入纸张的元素
+      selection.collection.reset([elementView.model])
+    })
+  }
 
   paper.on('cell:mouseleave', () => {
     MaskHighlighter.removeAll(paper, 'frame')
@@ -187,7 +204,7 @@ export function selectionKeyBoard () {
 
   graph.on('change', () => (movedElementsHash = ''))
 
-  function moveCells (dx, dy) {
+  function moveCells(dx, dy) {
     const cells = selection.collection.toArray()
     const elements = cells.filter((cell) => cell.isElement())
     const hash = elements
@@ -203,4 +220,21 @@ export function selectionKeyBoard () {
     graph.stopBatch('shift-selection')
     movedElementsHash = hash
   }
+
+  // function onSelectionChange() {
+  //   const selectedCells = selection.collection.toArray()
+  //   console.log('onSelectionChange', selectedCells)
+  //   paper.removeTools()
+  //   ui.Halo.clear(paper)
+  //   ui.FreeTransform.clear(paper)
+  //   ui.Inspector.close()
+  //   if (selectedCells.length === 1) {
+  //     const [primaryCell] = selectedCells
+  //     const primaryCellView = paper.findViewByModel(primaryCell)
+  //     selection.destroySelectionBox(primaryCell)
+  //     this.selectPrimaryCell(primaryCellView)
+  //   } else if (selectedCells.length === 2) {
+  //     selectedCells.forEach((cell) => selection.createSelectionBox(cell))
+  //   }
+  // }
 }

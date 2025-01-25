@@ -12,6 +12,11 @@ module.exports = {
     ecmaVersion: 2020
   },
   rules: {
+    // 允许使用单引号
+    quotes: ['error', 'single'],
+    // 关闭函数名和括号之间的空格检查
+    'space-before-function-paren': 'off',
+    'no-multiple-empty-lines': 2,
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     indent: 'off', // 缩进

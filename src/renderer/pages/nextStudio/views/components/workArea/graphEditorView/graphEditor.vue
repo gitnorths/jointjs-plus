@@ -1,8 +1,12 @@
 <template>
   <div class="graphEditorViewContainer" :id="tagKey">
-    <div class="graphEditorContainer paper-container" tabIndex="0" ref="graphEditorContainer" @keydown="keyDownHandler">
-    </div>
-    <symbol-dialog :graph="graph" :page-graph="pageGraphDto" ref="dialog"/>
+    <div
+      class="graphEditorContainer paper-container"
+      tabIndex="0"
+      ref="graphEditorContainer"
+      @keydown="keyDownHandler"
+    ></div>
+    <symbol-dialog :graph="graph" :page-graph="pageGraphDto" ref="dialog" />
   </div>
 </template>
 
@@ -18,6 +22,7 @@ import { dia, shapes, ui, highlighters } from '@joint/plus'
 import { getVariableTypeString } from '@/model/enum'
 import { Benchmark } from '@/util/consts'
 import { selectionKeyBoard } from './utils/index'
+import { nextTick } from 'process'
 
 export default {
   name: 'graphEditor',
@@ -25,7 +30,7 @@ export default {
   props: {
     tagKey: { type: String, required: true }
   },
-  data () {
+  data() {
     return {
       loadingService: null,
       orgPageGraph: null,
@@ -38,46 +43,46 @@ export default {
     }
   },
   computed: {
-    deviceDbName () {
+    deviceDbName() {
       return this.$store.getters.deviceDbName
     },
-    pageGraphDto () {
+    pageGraphDto() {
       return this.$store.getters.selectDto(this.tagKey)
     },
-    activeStatus () {
+    activeStatus() {
       return R.equals(this.tagKey, this.$store.getters.activeKey)
     },
-    focusedVfbId () {
+    focusedVfbId() {
       return this.$store.getters.focusedVfbId // FIXME 统一修改为searchPath来查找定位
     },
-    symbolProtoMap () {
+    symbolProtoMap() {
       return this.$store.getters.symbolProtoMap // 符号原型，用于构造新的业务对象
     },
-    symbolNameSpace () {
+    symbolNameSpace() {
       return this.$store.getters.symbolNameSpace
     },
-    nameSpace () {
+    nameSpace() {
       return { ...shapes, ...this.$store.getters.symbolNameSpace }
     }
   },
   watch: {
-    activeStatus (val) {
+    activeStatus(val) {
       if (val) {
         this.$store.commit('setCurrentPaper', this.paperScroller)
       }
     },
-    focusedVfbId (val) {
+    focusedVfbId(val) {
       if (val) {
         this.focus(val)
       }
     },
-    symbolNameSpace () {
+    symbolNameSpace() {
       // TODO
       console.log(this.graph, this.paper)
     }
   },
   methods: {
-    loading (fn) {
+    loading(fn) {
       this.loadingService = this.$loading({
         target: `#${this.tagKey}`,
         fullscreen: false,
@@ -87,7 +92,7 @@ export default {
       })
       return setTimeout(fn, 120)
     },
-    addVfbToGraph (block) {
+    addVfbToGraph(block) {
       const typeArr = block.pathId.split('/')
       const ctr = R.path(typeArr, this.nameSpace)
       const symbolBlock = new ctr()
@@ -108,7 +113,7 @@ export default {
       symbolBlock.attr('label/text', textContent)
       symbolBlock.addTo(this.graph)
     },
-    addLabelToGraph (block) {
+    addLabelToGraph(block) {
       const typeArr = block.pathId.split('/')
       const ctr = R.path(typeArr, this.nameSpace)
       const symbolBlock = new ctr()
@@ -118,10 +123,10 @@ export default {
       symbolBlock.attr('label/text', block.name || block.desc || block.abbr || block.instName)
       symbolBlock.addTo(this.graph)
     },
-    addAnnotationToGraph (annotation) {
+    addAnnotationToGraph(annotation) {
       // TODO
     },
-    addLineToGraph (line) {
+    addLineToGraph(line) {
       const link = new shapes.standard.Link({
         source: { id: line.headNodeId, port: line.headName },
         target: { id: line.tailNodeId, port: line.tailName }
@@ -136,7 +141,7 @@ export default {
       link.addTo(this.graph)
       // TODO 样式
     },
-    addCellToGraph ({ symbolBlocks, connectLines, annotations, inLabels, outLabels }) {
+    addCellToGraph({ symbolBlocks, connectLines, annotations, inLabels, outLabels }) {
       if (symbolBlocks && symbolBlocks.length > 0) {
         for (const block of symbolBlocks) {
           this.addVfbToGraph(block)
@@ -163,7 +168,7 @@ export default {
         }
       }
     },
-    initPageGraphDto () {
+    initPageGraphDto() {
       this.loading(() => {
         getObjContext(this.pageGraphDto, this.deviceDbName).then((page) => {
           if (page) {
@@ -193,7 +198,7 @@ export default {
         })
       })
     },
-    judgeChanged () {
+    judgeChanged() {
       this.recordSet = { insertRecords: [], updateRecords: [], removeRecords: [] }
       const oldValue = this.orgPageGraph
       const newValue = { symbolBlocks: [], connectLines: [], annotations: [] }
@@ -332,10 +337,10 @@ export default {
       }
       this.recordDelta()
     },
-    recordDelta () {
+    recordDelta() {
       this.$store.commit('updateDelta', { key: this.tagKey, delta: this.recordSet })
     },
-    getExistInstNameList () {
+    getExistInstNameList() {
       const result = []
       // FIXME
       const allCells = R.values(this.graph.model.cells) || []
@@ -349,7 +354,7 @@ export default {
     /**
      * 实例化一个symbol valueAddHandler ()
      */
-    async instanceSymbol (symbol, x, y) {
+    async instanceSymbol(symbol, x, y) {
       if (R.isNil(symbol)) {
         return
       }
@@ -368,7 +373,7 @@ export default {
         this.$notification.openErrorNotification(`新增功能块失败${e}`).logger()
       }
     },
-    instanceBaseSymbol (inputArgs) {
+    instanceBaseSymbol(inputArgs) {
       if (!inputArgs) {
         return
       }
@@ -389,7 +394,7 @@ export default {
         this.instanceSymbol(symbol, x, y)
       }
     },
-    instanceAnnotation (inputArgs) {
+    instanceAnnotation(inputArgs) {
       if (!inputArgs) {
         return
       }
@@ -406,27 +411,27 @@ export default {
       }
     },
     // esc键取消操作
-    cancelAction () {
+    cancelAction() {
       // todo
     },
-    delCells () {
+    delCells() {
       // todo
     },
-    copyCell2Str () {
+    copyCell2Str() {
       // TODO
     },
-    cutCell2Str () {
+    cutCell2Str() {
       this.copyCell2Str()
       // FIXME ，如果取消，则不删除。应该改为粘贴成功之后才删除
       this.delCells()
     },
-    showPastePreview () {
+    showPastePreview() {
       // TODO
     },
-    pasteStr2Graph (x, y) {
+    pasteStr2Graph(x, y) {
       // todo
     },
-    undo () {
+    undo() {
       if (!this.activeStatus) {
         return
       }
@@ -435,7 +440,7 @@ export default {
         this.judgeChanged()
       }
     },
-    redo () {
+    redo() {
       if (!this.activeStatus) {
         return
       }
@@ -444,13 +449,13 @@ export default {
         this.judgeChanged()
       }
     },
-    resetScale () {
+    resetScale() {
       this.paperScroller.zoomToFit({
         minScale: 1,
         maxScale: 1
       })
     },
-    keyDownHandler (evt) {
+    keyDownHandler(evt) {
       const ctrlKey = R.propOr(false, 'ctrlKey', evt)
       const shiftKey = R.propOr(false, 'shiftKey', evt)
       const altKey = R.propOr(false, 'altKey', evt)
@@ -479,14 +484,14 @@ export default {
         this.cancelAction()
       }
     },
-    fitToScreen () {
+    fitToScreen() {
       this.paperScroller.zoomToFit({
         minScale: 0.2,
         maxScale: 2
       })
       this.$vbus.$emit('SYNC_GRAPH_SCALE')
     },
-    refreshDesc (ignoreTagKeys) {
+    refreshDesc(ignoreTagKeys) {
       if (ignoreTagKeys && R.includes(this.tagKey, ignoreTagKeys)) {
         return
       }
@@ -544,7 +549,7 @@ export default {
           })
       })
     },
-    reset (ignoreTagKeys) {
+    reset(ignoreTagKeys) {
       if (ignoreTagKeys && !R.includes(this.tagKey, ignoreTagKeys)) {
         return
       }
@@ -562,10 +567,10 @@ export default {
         this.initPageGraphDto()
       }
     },
-    focus (vfbId) {
+    focus(vfbId) {
       // TODO
     },
-    linkTools () {
+    linkTools() {
       const verticesTool = new linkTools.Vertices()
       const segmentsTool = new linkTools.Segments()
       const sourceArrowheadTool = new linkTools.SourceArrowhead()
@@ -574,7 +579,7 @@ export default {
       const targetAnchorTool = new linkTools.TargetAnchor()
       const boundaryTool = new linkTools.Boundary()
       const removeButton = new linkTools.Remove({
-          distance: 20
+        distance: 20
       })
 
       const toolsView = this.toolsView = new dia.ToolsView({
@@ -594,261 +599,113 @@ export default {
         linkView.removeTools()
       })
     },
-    orthogonalRouter (vertices, opt, linkView) {
-        const sourceBBox = linkView.sourceBBox
-        const targetBBox = linkView.targetBBox
-        const sourcePoint = linkView.sourceAnchor
-        const targetPoint = linkView.targetAnchor
-        const { x: tx0, y: ty0 } = targetBBox
-        const { x: sx0, y: sy0 } = sourceBBox
-        const sourceOutsidePoint = sourcePoint.clone()
-        const spacing = -50
-        const sourceSide = sourceBBox.sideNearestToPoint(sourcePoint)
-        switch (sourceSide) {
-          case 'left':
-            sourceOutsidePoint.x = sx0 - spacing
-            break
-          case 'right':
-            sourceOutsidePoint.x = sx0 + sourceBBox.width + spacing
-            break
-          case 'top':
-            sourceOutsidePoint.y = sy0 - spacing
-            break
-          case 'bottom':
-            sourceOutsidePoint.y = sy0 + sourceBBox.height + spacing
-            break
-        }
-        const targetOutsidePoint = targetPoint.clone()
-        const targetSide = targetBBox.sideNearestToPoint(targetPoint)
-        switch (targetSide) {
-          case 'left':
-            targetOutsidePoint.x = targetBBox.x - spacing
-            break
-          case 'right':
-            targetOutsidePoint.x = targetBBox.x + targetBBox.width + spacing
-            break
-          case 'top':
-            targetOutsidePoint.y = targetBBox.y - spacing
-            break
-          case 'bottom':
-            targetOutsidePoint.y = targetBBox.y + targetBBox.height + spacing
-            break
-        }
+    orthogonalRouter(vertices, opt, linkView) {
+      const sourceBBox = linkView.sourceBBox
+      const targetBBox = linkView.targetBBox
+      const sourcePoint = linkView.sourceAnchor
+      const targetPoint = linkView.targetAnchor
+      const { x: tx0, y: ty0 } = targetBBox
+      const { x: sx0, y: sy0 } = sourceBBox
+      const sourceOutsidePoint = sourcePoint.clone()
+      const spacing = -50
+      const sourceSide = sourceBBox.sideNearestToPoint(sourcePoint)
+      switch (sourceSide) {
+        case 'left':
+          sourceOutsidePoint.x = sx0 - spacing
+          break
+        case 'right':
+          sourceOutsidePoint.x = sx0 + sourceBBox.width + spacing
+          break
+        case 'top':
+          sourceOutsidePoint.y = sy0 - spacing
+          break
+        case 'bottom':
+          sourceOutsidePoint.y = sy0 + sourceBBox.height + spacing
+          break
+      }
+      const targetOutsidePoint = targetPoint.clone()
+      const targetSide = targetBBox.sideNearestToPoint(targetPoint)
+      switch (targetSide) {
+        case 'left':
+          targetOutsidePoint.x = targetBBox.x - spacing
+          break
+        case 'right':
+          targetOutsidePoint.x = targetBBox.x + targetBBox.width + spacing
+          break
+        case 'top':
+          targetOutsidePoint.y = targetBBox.y - spacing
+          break
+        case 'bottom':
+          targetOutsidePoint.y = targetBBox.y + targetBBox.height + spacing
+          break
+      }
 
-        const { x: sox, y: soy } = sourceOutsidePoint
-        const { x: tox, y: toy } = targetOutsidePoint
-        const tx1 = tx0 + targetBBox.width
-        const ty1 = ty0 + targetBBox.height
-        const tcx = (tx0 + tx1) / 2
-        const tcy = (ty0 + ty1) / 2
-        const sx1 = sx0 + sourceBBox.width
-        const sy1 = sy0 + sourceBBox.height
+      const { x: sox, y: soy } = sourceOutsidePoint
+      const { x: tox, y: toy } = targetOutsidePoint
+      const tx1 = tx0 + targetBBox.width
+      const ty1 = ty0 + targetBBox.height
+      const tcx = (tx0 + tx1) / 2
+      const tcy = (ty0 + ty1) / 2
+      const sx1 = sx0 + sourceBBox.width
+      const sy1 = sy0 + sourceBBox.height
 
-        if (sourceSide === 'left' && targetSide === 'right') {
-          if (sox < tox) {
-            let y = (soy + toy) / 2
-            if (sox < tx0) {
-              if (y > tcy && y < ty1 + spacing) {
-                y = ty0 - spacing
-              } else if (y <= tcy && y > ty0 - spacing) {
-                y = ty1 + spacing
-              }
+      if (sourceSide === 'left' && targetSide === 'right') {
+        if (sox < tox) {
+          let y = (soy + toy) / 2
+          if (sox < tx0) {
+            if (y > tcy && y < ty1 + spacing) {
+              y = ty0 - spacing
+            } else if (y <= tcy && y > ty0 - spacing) {
+              y = ty1 + spacing
             }
-            return [
-              { x: sox, y: soy },
-              { x: sox, y },
-              { x: tox, y },
-              { x: tox, y: toy }
-            ]
-          } else {
-            const x = (sox + tox) / 2
-            return [
-              { x, y: soy },
-              { x, y: toy }
-            ]
-          }
-        } else if (sourceSide === 'right' && targetSide === 'left') {
-          // Right to left
-          if (sox > tox) {
-            let y = (soy + toy) / 2
-            if (sox > tx1) {
-              if (y > tcy && y < ty1 + spacing) {
-                y = ty0 - spacing
-              } else if (y <= tcy && y > ty0 - spacing) {
-                y = ty1 + spacing
-              }
-            }
-            return [
-              { x: sox, y: soy },
-              { x: sox, y },
-              { x: tox, y },
-              { x: tox, y: toy }
-            ]
-          } else {
-            const x = (sox + tox) / 2
-            return [
-              { x, y: soy },
-              { x, y: toy }
-            ]
-          }
-        } else if (sourceSide === 'top' && targetSide === 'bottom') {
-          // analogical to let to right
-          if (soy < toy) {
-            let x = (sox + tox) / 2
-            if (soy < ty0) {
-              if (x > tcx && x < tx1 + spacing) {
-                x = tx0 - spacing
-              } else if (x <= tcx && x > tx0 - spacing) {
-                x = tx1 + spacing
-              }
-            }
-            return [
-              { x: sox, y: soy },
-              { x, y: soy },
-              { x, y: toy },
-              { x: tox, y: toy }
-            ]
-          }
-          const y = (soy + toy) / 2
-          return [
-            { x: sox, y },
-            { x: tox, y }
-          ]
-        } else if (sourceSide === 'bottom' && targetSide === 'top') {
-          // analogical to right to left
-          if (soy >= toy) {
-            let x = (sox + tox) / 2
-            if (soy > ty1) {
-              if (x > tcx && x < tx1 + spacing) {
-                x = tx0 - spacing
-              } else if (x <= tcx && x > tx0 - spacing) {
-                x = tx1 + spacing
-              }
-            }
-            return [
-              { x: sox, y: soy },
-              { x, y: soy },
-              { x, y: toy },
-              { x: tox, y: toy }
-            ]
-          }
-          const y = (soy + toy) / 2
-          return [
-            { x: sox, y },
-            { x: tox, y }
-          ]
-        } else if (sourceSide === 'top' && targetSide === 'top') {
-          const y = Math.min(soy, toy)
-          return [
-            { x: sox, y },
-            { x: tox, y }
-          ]
-        } else if (sourceSide === 'bottom' && targetSide === 'bottom') {
-          const y = Math.max(soy, toy)
-          return [
-            { x: sox, y },
-            { x: tox, y }
-          ]
-        } else if (sourceSide === 'left' && targetSide === 'left') {
-          const x = Math.min(sox, tox)
-          return [
-            { x, y: soy },
-            { x, y: toy }
-          ]
-        } else if (sourceSide === 'right' && targetSide === 'right') {
-          const x = Math.max(sox, tox)
-          return [
-            { x, y: soy },
-            { x, y: toy }
-          ]
-        } else if (sourceSide === 'top' && targetSide === 'right') {
-          if (soy > toy) {
-            if (sox < tox) {
-              let y = (sy0 + toy) / 2
-              if (y > tcy && y < ty1 + spacing && sox < tx0 - spacing) {
-                y = ty0 - spacing
-              }
-              return [
-                { x: sox, y },
-                { x: tox, y },
-                { x: tox, y: toy }
-              ]
-            }
-            return [{ x: sox, y: toy }]
-          }
-          const x = (sx0 + tox) / 2
-          if (x > sx0 - spacing && soy < ty1) {
-            const y = Math.min(sy0, ty0) - spacing
-            const x = Math.max(sx1, tx1) + spacing
-            return [
-              { x: sox, y },
-              { x, y },
-              { x, y: toy }
-            ]
           }
           return [
             { x: sox, y: soy },
+            { x: sox, y },
+            { x: tox, y },
+            { x: tox, y: toy }
+          ]
+        } else {
+          const x = (sox + tox) / 2
+          return [
             { x, y: soy },
             { x, y: toy }
           ]
-        } else if (sourceSide === 'top' && targetSide === 'left') {
-          if (soy > toy) {
-            if (sox > tox) {
-              let y = (sy0 + toy) / 2
-              if (y > tcy && y < ty1 + spacing && sox > tx1 + spacing) {
-                y = ty0 - spacing
-              }
-              return [
-                { x: sox, y },
-                { x: tox, y },
-                { x: tox, y: toy }
-              ]
+        }
+      } else if (sourceSide === 'right' && targetSide === 'left') {
+        // Right to left
+        if (sox > tox) {
+          let y = (soy + toy) / 2
+          if (sox > tx1) {
+            if (y > tcy && y < ty1 + spacing) {
+              y = ty0 - spacing
+            } else if (y <= tcy && y > ty0 - spacing) {
+              y = ty1 + spacing
             }
-            return [{ x: sox, y: toy }]
-          }
-          const x = (sx1 + tox) / 2
-          if (x < sx1 + spacing && soy < ty1) {
-            const y = Math.min(sy0, ty0) - spacing
-            const x = Math.min(sx0, tx0) - spacing
-            return [
-              { x: sox, y },
-              { x, y },
-              { x, y: toy }
-            ]
           }
           return [
             { x: sox, y: soy },
+            { x: sox, y },
+            { x: tox, y },
+            { x: tox, y: toy }
+          ]
+        } else {
+          const x = (sox + tox) / 2
+          return [
             { x, y: soy },
             { x, y: toy }
           ]
-        } else if (sourceSide === 'bottom' && targetSide === 'right') {
-          if (soy < toy) {
-            if (sox < tox) {
-              let y = (sy1 + ty0) / 2
-              if (y < tcy && y > ty0 - spacing && sox < tx0 - spacing) {
-                y = ty1 + spacing
-              }
-              return [
-                { x: sox, y },
-                { x: tox, y },
-                { x: tox, y: toy }
-              ]
+        }
+      } else if (sourceSide === 'top' && targetSide === 'bottom') {
+        // analogical to let to right
+        if (soy < toy) {
+          let x = (sox + tox) / 2
+          if (soy < ty0) {
+            if (x > tcx && x < tx1 + spacing) {
+              x = tx0 - spacing
+            } else if (x <= tcx && x > tx0 - spacing) {
+              x = tx1 + spacing
             }
-            return [
-              { x: sox, y: soy },
-              { x: sox, y: toy },
-              { x: tox, y: toy }
-            ]
-          }
-          const x = (sx0 + tox) / 2
-          if (x > sx0 - spacing && sy1 > toy) {
-            const y = Math.max(sy1, ty1) + spacing
-            const x = Math.max(sx1, tx1) + spacing
-            return [
-              { x: sox, y },
-              { x, y },
-              { x, y: toy }
-            ]
           }
           return [
             { x: sox, y: soy },
@@ -856,34 +713,22 @@ export default {
             { x, y: toy },
             { x: tox, y: toy }
           ]
-        } else if (sourceSide === 'bottom' && targetSide === 'left') {
-          if (soy < toy) {
-            if (sox > tox) {
-              let y = (sy1 + ty0) / 2
-              if (y < tcy && y > ty0 - spacing && sox > tx1 + spacing) {
-                y = ty1 + spacing
-              }
-              return [
-                { x: sox, y },
-                { x: tox, y },
-                { x: tox, y: toy }
-              ]
+        }
+        const y = (soy + toy) / 2
+        return [
+          { x: sox, y },
+          { x: tox, y }
+        ]
+      } else if (sourceSide === 'bottom' && targetSide === 'top') {
+        // analogical to right to left
+        if (soy >= toy) {
+          let x = (sox + tox) / 2
+          if (soy > ty1) {
+            if (x > tcx && x < tx1 + spacing) {
+              x = tx0 - spacing
+            } else if (x <= tcx && x > tx0 - spacing) {
+              x = tx1 + spacing
             }
-            return [
-              { x: sox, y: soy },
-              { x: sox, y: toy },
-              { x: tox, y: toy }
-            ]
-          }
-          const x = (sx1 + tox) / 2
-          if (x < sx1 + spacing && sy1 > toy) {
-            const y = Math.max(sy1, ty1) + spacing
-            const x = Math.min(sx0, tx0) - spacing
-            return [
-              { x: sox, y },
-              { x, y },
-              { x, y: toy }
-            ]
           }
           return [
             { x: sox, y: soy },
@@ -891,147 +736,307 @@ export default {
             { x, y: toy },
             { x: tox, y: toy }
           ]
-        } else if (sourceSide === 'left' && targetSide === 'bottom') {
-          if (sox > tox) {
-            if (soy < toy) {
-              let x = (sx0 + tx1) / 2
-              if (x > tcx && x < tx1 + spacing && soy < ty0 - spacing) {
-                x = Math.max(sx1, tx1) + spacing
-              }
-              return [
-                { x, y: soy },
-                { x, y: toy },
-                { x: tox, y: toy }
-              ]
-            }
-            return [{ x: tox, y: soy }]
-          }
-          const y = (sy0 + ty1) / 2
-          if (y > sy0 - spacing) {
-            const x = Math.min(sx0, tx0) - spacing
-            const y = Math.max(sy1, ty1) + spacing
-            return [
-              { x, y: soy },
-              { x, y },
-              { x: tox, y }
-            ]
-          }
-          return [
-            { x: sox, y: soy },
-            { x: sox, y: y },
-            { x: tox, y },
-            { x: tox, y: toy }
-          ]
-        } else if (sourceSide === 'left' && targetSide === 'top') {
-          // Analogy to the left - bottom case.
-          if (sox > tox) {
-            if (soy > toy) {
-              let x = (sx0 + tx1) / 2
-              if (x > tcx && x < tx1 + spacing && soy > ty1 + spacing) {
-                x = Math.max(sx1, tx1) + spacing
-              }
-              return [
-                { x, y: soy },
-                { x, y: toy },
-                { x: tox, y: toy }
-              ]
-            }
-            return [{ x: tox, y: soy }]
-          }
-          const y = (sy1 + ty0) / 2
-          if (y < sy1 + spacing) {
-            const x = Math.min(sx0, tx0) - spacing
-            const y = Math.min(sy0, ty0) - spacing
-            return [
-              { x, y: soy },
-              { x, y },
-              { x: tox, y }
-            ]
-          }
-          return [
-            { x: sox, y: soy },
-            { x: sox, y: y },
-            { x: tox, y },
-            { x: tox, y: toy }
-          ]
-        } else if (sourceSide === 'right' && targetSide === 'top') {
-          // Analogy to the right - bottom case.
+        }
+        const y = (soy + toy) / 2
+        return [
+          { x: sox, y },
+          { x: tox, y }
+        ]
+      } else if (sourceSide === 'top' && targetSide === 'top') {
+        const y = Math.min(soy, toy)
+        return [
+          { x: sox, y },
+          { x: tox, y }
+        ]
+      } else if (sourceSide === 'bottom' && targetSide === 'bottom') {
+        const y = Math.max(soy, toy)
+        return [
+          { x: sox, y },
+          { x: tox, y }
+        ]
+      } else if (sourceSide === 'left' && targetSide === 'left') {
+        const x = Math.min(sox, tox)
+        return [
+          { x, y: soy },
+          { x, y: toy }
+        ]
+      } else if (sourceSide === 'right' && targetSide === 'right') {
+        const x = Math.max(sox, tox)
+        return [
+          { x, y: soy },
+          { x, y: toy }
+        ]
+      } else if (sourceSide === 'top' && targetSide === 'right') {
+        if (soy > toy) {
           if (sox < tox) {
-            if (soy > toy) {
-              let x = (sx1 + tx0) / 2
-              if (x < tcx && x > tx0 - spacing && soy > ty1 + spacing) {
-                x = Math.max(sx1, tx1) + spacing
-              }
-              return [
-                { x, y: soy },
-                { x, y: toy },
-                { x: tox, y: toy }
-              ]
-            }
-            return [{ x: tox, y: soy }]
-          }
-          const y = (sy1 + ty0) / 2
-          if (y < sy1 + spacing) {
-            const x = Math.max(sx1, tx1) + spacing
-            const y = Math.min(sy0, ty0) - spacing
-            return [
-              { x, y: soy },
-              { x, y },
-              { x: tox, y }
-            ]
-          }
-          return [
-            { x: sox, y: soy },
-            { x: sox, y: y },
-            { x: tox, y },
-            { x: tox, y: toy }
-          ]
-        } else if (sourceSide === 'right' && targetSide === 'bottom') {
-          // Analogy to the right - top case.
-          if (sox < tox) {
-            if (soy < toy) {
-              let x = (sx1 + tx0) / 2
-              if (x < tcx && x > tx0 - spacing && soy < ty0 - spacing) {
-                x = Math.min(sx0, tx0) - spacing
-              }
-              return [
-                { x, y: soy },
-                { x, y: toy },
-                { x: tox, y: toy }
-              ]
+            let y = (sy0 + toy) / 2
+            if (y > tcy && y < ty1 + spacing && sox < tx0 - spacing) {
+              y = ty0 - spacing
             }
             return [
-              { x: sox, y: soy },
-              { x: tox, y: soy },
+              { x: sox, y },
+              { x: tox, y },
               { x: tox, y: toy }
             ]
           }
-          const y = (sy0 + ty1) / 2
-          if (y > sy0 - spacing) {
-            const x = Math.max(sx1, tx1) + spacing
-            const y = Math.max(sy1, ty1) + spacing
+          return [{ x: sox, y: toy }]
+        }
+        const x = (sx0 + tox) / 2
+        if (x > sx0 - spacing && soy < ty1) {
+          const y = Math.min(sy0, ty0) - spacing
+          const x = Math.max(sx1, tx1) + spacing
+          return [
+            { x: sox, y },
+            { x, y },
+            { x, y: toy }
+          ]
+        }
+        return [
+          { x: sox, y: soy },
+          { x, y: soy },
+          { x, y: toy }
+        ]
+      } else if (sourceSide === 'top' && targetSide === 'left') {
+        if (soy > toy) {
+          if (sox > tox) {
+            let y = (sy0 + toy) / 2
+            if (y > tcy && y < ty1 + spacing && sox > tx1 + spacing) {
+              y = ty0 - spacing
+            }
             return [
-              { x, y: soy },
-              { x, y },
-              { x: tox, y }
+              { x: sox, y },
+              { x: tox, y },
+              { x: tox, y: toy }
+            ]
+          }
+          return [{ x: sox, y: toy }]
+        }
+        const x = (sx1 + tox) / 2
+        if (x < sx1 + spacing && soy < ty1) {
+          const y = Math.min(sy0, ty0) - spacing
+          const x = Math.min(sx0, tx0) - spacing
+          return [
+            { x: sox, y },
+            { x, y },
+            { x, y: toy }
+          ]
+        }
+        return [
+          { x: sox, y: soy },
+          { x, y: soy },
+          { x, y: toy }
+        ]
+      } else if (sourceSide === 'bottom' && targetSide === 'right') {
+        if (soy < toy) {
+          if (sox < tox) {
+            let y = (sy1 + ty0) / 2
+            if (y < tcy && y > ty0 - spacing && sox < tx0 - spacing) {
+              y = ty1 + spacing
+            }
+            return [
+              { x: sox, y },
+              { x: tox, y },
+              { x: tox, y: toy }
             ]
           }
           return [
             { x: sox, y: soy },
-            { x: sox, y: y },
-            { x: tox, y },
+            { x: sox, y: toy },
             { x: tox, y: toy }
           ]
         }
+        const x = (sx0 + tox) / 2
+        if (x > sx0 - spacing && sy1 > toy) {
+          const y = Math.max(sy1, ty1) + spacing
+          const x = Math.max(sx1, tx1) + spacing
+          return [
+            { x: sox, y },
+            { x, y },
+            { x, y: toy }
+          ]
+        }
+        return [
+          { x: sox, y: soy },
+          { x, y: soy },
+          { x, y: toy },
+          { x: tox, y: toy }
+        ]
+      } else if (sourceSide === 'bottom' && targetSide === 'left') {
+        if (soy < toy) {
+          if (sox > tox) {
+            let y = (sy1 + ty0) / 2
+            if (y < tcy && y > ty0 - spacing && sox > tx1 + spacing) {
+              y = ty1 + spacing
+            }
+            return [
+              { x: sox, y },
+              { x: tox, y },
+              { x: tox, y: toy }
+            ]
+          }
+          return [
+            { x: sox, y: soy },
+            { x: sox, y: toy },
+            { x: tox, y: toy }
+          ]
+        }
+        const x = (sx1 + tox) / 2
+        if (x < sx1 + spacing && sy1 > toy) {
+          const y = Math.max(sy1, ty1) + spacing
+          const x = Math.min(sx0, tx0) - spacing
+          return [
+            { x: sox, y },
+            { x, y },
+            { x, y: toy }
+          ]
+        }
+        return [
+          { x: sox, y: soy },
+          { x, y: soy },
+          { x, y: toy },
+          { x: tox, y: toy }
+        ]
+      } else if (sourceSide === 'left' && targetSide === 'bottom') {
+        if (sox > tox) {
+          if (soy < toy) {
+            let x = (sx0 + tx1) / 2
+            if (x > tcx && x < tx1 + spacing && soy < ty0 - spacing) {
+              x = Math.max(sx1, tx1) + spacing
+            }
+            return [
+              { x, y: soy },
+              { x, y: toy },
+              { x: tox, y: toy }
+            ]
+          }
+          return [{ x: tox, y: soy }]
+        }
+        const y = (sy0 + ty1) / 2
+        if (y > sy0 - spacing) {
+          const x = Math.min(sx0, tx0) - spacing
+          const y = Math.max(sy1, ty1) + spacing
+          return [
+            { x, y: soy },
+            { x, y },
+            { x: tox, y }
+          ]
+        }
+        return [
+          { x: sox, y: soy },
+          { x: sox, y: y },
+          { x: tox, y },
+          { x: tox, y: toy }
+        ]
+      } else if (sourceSide === 'left' && targetSide === 'top') {
+        // Analogy to the left - bottom case.
+        if (sox > tox) {
+          if (soy > toy) {
+            let x = (sx0 + tx1) / 2
+            if (x > tcx && x < tx1 + spacing && soy > ty1 + spacing) {
+              x = Math.max(sx1, tx1) + spacing
+            }
+            return [
+              { x, y: soy },
+              { x, y: toy },
+              { x: tox, y: toy }
+            ]
+          }
+          return [{ x: tox, y: soy }]
+        }
+        const y = (sy1 + ty0) / 2
+        if (y < sy1 + spacing) {
+          const x = Math.min(sx0, tx0) - spacing
+          const y = Math.min(sy0, ty0) - spacing
+          return [
+            { x, y: soy },
+            { x, y },
+            { x: tox, y }
+          ]
+        }
+        return [
+          { x: sox, y: soy },
+          { x: sox, y: y },
+          { x: tox, y },
+          { x: tox, y: toy }
+        ]
+      } else if (sourceSide === 'right' && targetSide === 'top') {
+        // Analogy to the right - bottom case.
+        if (sox < tox) {
+          if (soy > toy) {
+            let x = (sx1 + tx0) / 2
+            if (x < tcx && x > tx0 - spacing && soy > ty1 + spacing) {
+              x = Math.max(sx1, tx1) + spacing
+            }
+            return [
+              { x, y: soy },
+              { x, y: toy },
+              { x: tox, y: toy }
+            ]
+          }
+          return [{ x: tox, y: soy }]
+        }
+        const y = (sy1 + ty0) / 2
+        if (y < sy1 + spacing) {
+          const x = Math.max(sx1, tx1) + spacing
+          const y = Math.min(sy0, ty0) - spacing
+          return [
+            { x, y: soy },
+            { x, y },
+            { x: tox, y }
+          ]
+        }
+        return [
+          { x: sox, y: soy },
+          { x: sox, y: y },
+          { x: tox, y },
+          { x: tox, y: toy }
+        ]
+      } else if (sourceSide === 'right' && targetSide === 'bottom') {
+        // Analogy to the right - top case.
+        if (sox < tox) {
+          if (soy < toy) {
+            let x = (sx1 + tx0) / 2
+            if (x < tcx && x > tx0 - spacing && soy < ty0 - spacing) {
+              x = Math.min(sx0, tx0) - spacing
+            }
+            return [
+              { x, y: soy },
+              { x, y: toy },
+              { x: tox, y: toy }
+            ]
+          }
+          return [
+            { x: sox, y: soy },
+            { x: tox, y: soy },
+            { x: tox, y: toy }
+          ]
+        }
+        const y = (sy0 + ty1) / 2
+        if (y > sy0 - spacing) {
+          const x = Math.max(sx1, tx1) + spacing
+          const y = Math.max(sy1, ty1) + spacing
+          return [
+            { x, y: soy },
+            { x, y },
+            { x: tox, y }
+          ]
+        }
+        return [
+          { x: sox, y: soy },
+          { x: sox, y: y },
+          { x: tox, y },
+          { x: tox, y: toy }
+        ]
+      }
     },
-    zoomIn (val) {
+    zoomIn(val) {
       this.paperScroller.zoom(0.2, { max: val })
     },
-    zoomOut (val) {
+    zoomOut(val) {
       this.paperScroller.zoom(-0.2, { min: val })
     }
   },
-  mounted () {
+  mounted() {
     // 初始化jonit
     this.graph = new dia.Graph({}, { cellNamespace: this.nameSpace })
 
@@ -1104,12 +1109,12 @@ export default {
       this.paperScroller.zoom(zoom * scale, { min: 0.2, max: 5, ox, oy, absolute: true })
     })
 
-    this.paper.on('blank:pointerdown', () => {
-      this.removeAllTools()
-    })
+    // this.paper.on('blank:pointerdown', () => {
+    //   this.removeAllTools()
+    // })
 
     this.paper.on('link:pointerdblclick', (linkView) => {
-      this.removeAllTools()
+      // this.removeAllTools()
       this.showLinkTools(linkView)
     })
 
@@ -1135,7 +1140,10 @@ export default {
     this.$store.commit('setSnaplines', this.snaplines)
     this.$store.commit('setCurrentPaper', this.paperScroller)
 
-    selectionKeyBoard()
+    // 等待组件渲染完成
+    nextTick(() => {
+      selectionKeyBoard()
+    })
 
     this.$vbus.$on('REFRESH_WORK_AREA', this.refreshDesc)
     this.$vbus.$on('RELOAD_WORK_AREA', this.reset)
@@ -1148,7 +1156,7 @@ export default {
     this.$vbus.$on('ZOOM_OUT', this.zoomOut)
     this.$vbus.$on('FIT_TO_SCREEN', this.fitToScreen)
   },
-  destroyed () {
+  destroyed() {
     this.$vbus.$off('REFRESH_WORK_AREA', this.refreshDesc)
     this.$vbus.$off('RELOAD_WORK_AREA', this.reset)
     this.$vbus.$off('SAVE_SUCCEEDED', this.refreshDesc)
